@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: studio-jf-alicia-whatsapp
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: STUDIO_OFFICIAL_NUMBER
+        value: 5521960003154
+      - key: OWNER_PERSONAL_NUMBER
+        value: 5521993826303
+      - key: STUDIO_PIX_KEY
+        value: 21960003154
+      - key: DATABASE_URL
+        value: file:/data/dev.db
+      - key: BAILEYS_AUTH_DIR
+        value: /data/auth_info_baileys
+      - key: GEMINI_API_KEY
+        value: ""

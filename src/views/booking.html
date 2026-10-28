@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Studio JF Designer — Agendamento Online</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slateDark: {
+              950: '#090f1d',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            magenta: {
+              400: '#f472b6',
+              500: '#ec4899',
+              600: '#db2777',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+            },
+            mint: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-[#0f172a] text-slate-100 min-h-screen pb-44 antialiased selection:bg-pink-500 selection:text-white">
+
+  <!-- HEADER COMPACTO E ELEGANTE -->
+  <header class="sticky top-0 z-30 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-amber-500 p-[1.5px] shadow-lg shadow-pink-500/20">
+          <div class="w-full h-full bg-[#0f172a] rounded-[10px] flex items-center justify-center font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-amber-300 text-base">
+            JF
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Studio JF Designer</h1>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+              ✨ Agenda Online
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Janaína Ferreira • Consulta de Horários em Tempo Real</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="/" class="text-xs font-medium text-slate-300 hover:text-white bg-[#1e293b] hover:bg-slate-700/80 border border-slate-700 px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+          <span>💬</span>
+          <span class="hidden sm:inline">Chat Alícia</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-3xl mx-auto px-4 pt-5 space-y-7">
+
+    <!-- PASSO 1: SELETOR DE CATEGORIA E SERVIÇO -->
+    <section aria-labelledby="step-service-heading" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">1</span>
+          <h2 id="step-service-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
+            Escolha o Procedimento
+          </h2>
+        </div>
+        <span id="selectedDurationBadge" class="text-xs text-amber-300/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">
+          ⏱️ Duração: --
+        </span>
+      </div>
+
+      <!-- Abas de Categoria -->
+      <div class="grid grid-cols-2 gap-2 p-1 bg-[#1e293b] rounded-2xl border border-slate-800" role="tablist">
+        <button
+          id="tab-cilios"
+          type="button"
+          onclick="BookingController.setCategory('cilios')"
+          class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/25"
+        >
+          <span>👁️</span>
+          <span>Extensão de Cílios</span>
+        </button>
+        <button
+          id="tab-sobrancelhas"
+          type="button"
+          onclick="BookingController.setCategory('sobrancelhas')"
+          class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white"
+        >
+          <span>✨</span>
+          <span>Sobrancelhas & Manutenção</span>
+        </button>
+      </div>
+
+      <!-- Lista de Cards de Serviço -->
+      <div id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Preenchido dinamicamente pelo controlador JS -->
+      </div>
+    </section>
+
+    <!-- PASSO 2: SELETOR DE DATA (CARROSSEL DE DIAS + NAVEGAÇÃO) -->
+    <section aria-labelledby="step-date-heading" class="space-y-3.5">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">2</span>
+          <h2 id="step-date-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
+            Selecione a Data
+          </h2>
+        </div>
+
+        <!-- Seletor rápido de data (input date nativo + botões de avanço) -->
+        <div class="flex items-center gap-1.5">
+          <button
+            type="button"
+            onclick="BookingController.shiftCarousel(-7)"
+            class="p-1.5 rounded-lg bg-[#1e293b] hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition"
+            title="Semana anterior"
+          >
+            ◀
+          </button>
+          <input
+            type="date"
+            id="nativeDatePicker"
+            onchange="BookingController.onDateInputChange(this.value)"
+            class="bg-[#1e293b] border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-pink-500"
+          />
+          <button
+            type="button"
+            onclick="BookingController.shiftCarousel(7)"
+            class="p-1.5 rounded-lg bg-[#1e293b] hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition"
+            title="Próxima semana"
+          >
+            ▶
+          </button>
+        </div>
+      </div>
+
+      <!-- Informativo de Expediente -->
+      <div class="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 bg-[#1e293b]/60 border border-slate-800/80 rounded-xl px-3 py-2">
+        <span>🕒 <strong class="text-slate-300">Seg a Sex:</strong> 09:00 às 19:00 • <strong class="text-slate-300">Sáb:</strong> 08:00 às 18:00</span>
+        <span class="text-slate-500 hidden sm:inline">Domingos fechado</span>
+      </div>
+
+      <!-- Carrossel Horizontal de Dias -->
+      <div
+        id="dateCarousel"
+        class="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth"
+      >
+        <!-- Gerado dinamicamente via JS -->
+      </div>
+    </section>
+
+    <!-- PASSO 3: GRADE DE HORÁRIOS (MANHÃ E TARDE) -->
+    <section aria-labelledby="step-slots-heading" class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">3</span>
+          <h2 id="step-slots-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
+            Horários para <span id="selectedDateTitle" class="text-pink-400">--/--</span>
+          </h2>
+        </div>
+
+        <!-- Legenda de Status -->
+        <div class="flex items-center gap-3 text-xs">
+          <span class="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+            Disponível
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-slate-400 font-medium">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+            Indisponível
+          </span>
+        </div>
+      </div>
+
+      <!-- Container de Estado de Carregamento (Skeleton Loader) -->
+      <div id="slotsSkeleton" class="hidden space-y-5">
+        <div class="space-y-2.5">
+          <div class="h-4 w-28 rounded skeleton-shimmer"></div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+          </div>
+        </div>
+        <div class="space-y-2.5">
+          <div class="h-4 w-28 rounded skeleton-shimmer"></div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+            <div class="h-12 rounded-xl skeleton-shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container da Grade Real (Manhã e Tarde) -->
+      <div id="slotsContainer" class="space-y-5">
+        <!-- Turno da Manhã -->
+        <div class="bg-[#1e293b]/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">☀️</span>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">Turno da Manhã</h3>
+            </div>
+            <span id="morningCountBadge" class="text-[11px] text-slate-400 font-medium">--</span>
+          </div>
+          <div id="morningGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
+        </div>
+
+        <!-- Turno da Tarde -->
+        <div class="bg-[#1e293b]/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🌤️</span>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">Turno da Tarde</h3>
+            </div>
+            <span id="afternoonCountBadge" class="text-[11px] text-slate-400 font-medium">--</span>
+          </div>
+          <div id="afternoonGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
+        </div>
+      </div>
+
+      <!-- Estado Vazio / Domingo / Fechado -->
+      <div id="closedStateBox" class="hidden bg-[#1e293b] border border-slate-800 rounded-2xl p-6 text-center space-y-2">
+        <div class="text-2xl">🗓️</div>
+        <h3 id="closedStateTitle" class="text-sm font-bold text-white">Estúdio Fechado neste Dia</h3>
+        <p id="closedStateMessage" class="text-xs text-slate-400 max-w-md mx-auto">
+          Selecione outro dia útil ou sábado no calendário acima para visualizar os horários disponíveis.
+        </p>
+      </div>
+    </section>
+
+    <!-- PASSO 4: SEUS DADOS (NOME E TELEFONE PARA O WHATSAPP) -->
+    <section aria-labelledby="step-client-heading" class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">4</span>
+          <h2 id="step-client-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
+            Seus Dados de Identificação
+          </h2>
+        </div>
+        <span class="text-[11px] text-slate-400">Enviados junto com seu pedido no WhatsApp</span>
+      </div>
+
+      <div class="bg-[#1e293b]/80 border border-slate-800 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label for="clientNameInput" class="block text-xs font-bold text-slate-300 mb-1.5">
+            👤 Seu Nome Completo <span class="text-pink-400">*</span>
+          </label>
+          <input
+            type="text"
+            id="clientNameInput"
+            oninput="BookingController.onClientInfoInput('page')"
+            placeholder="Ex: Maria Clara Silva"
+            autocomplete="name"
+            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
+          />
+        </div>
+        <div>
+          <label for="clientPhoneInput" class="block text-xs font-bold text-slate-300 mb-1.5">
+            📱 Seu Telefone / WhatsApp <span class="text-pink-400">*</span>
+          </label>
+          <input
+            type="tel"
+            id="clientPhoneInput"
+            oninput="BookingController.onClientInfoInput('page')"
+            placeholder="Ex: (21) 99999-9999"
+            autocomplete="tel"
+            maxlength="16"
+            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
+          />
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PASSO 5: BARRA INFERIOR FIXA (RESUMO COMPACTO, DADOS DA CLIENTE & DIRECIONAMENTO WHATSAPP) -->
+  <div
+    id="bookingSummarySheet"
+    class="hidden fixed bottom-0 inset-x-0 z-40 bg-[#1e293b]/95 backdrop-blur-xl border-t border-pink-500/30 shadow-[0_-12px_35px_rgba(0,0,0,0.65)] animate-slide-up"
+  >
+    <div class="max-w-3xl mx-auto px-4 py-3.5 sm:py-4 space-y-3">
+      <!-- Campos rápidos de Nome e Telefone dentro do resumo (sincronizados) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div>
+          <input
+            type="text"
+            id="sheetClientNameInput"
+            oninput="BookingController.onClientInfoInput('sheet')"
+            placeholder="👤 Digite seu nome completo *"
+            autocomplete="name"
+            class="w-full bg-[#0f172a]/90 border border-slate-700 focus:border-pink-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition"
+          />
+        </div>
+        <div>
+          <input
+            type="tel"
+            id="sheetClientPhoneInput"
+            oninput="BookingController.onClientInfoInput('sheet')"
+            placeholder="📱 Seu WhatsApp: (21) 99999-9999 *"
+            autocomplete="tel"
+            maxlength="16"
+            class="w-full bg-[#0f172a]/90 border border-slate-700 focus:border-pink-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition"
+          />
+        </div>
+      </div>
+
+      <p id="clientInfoAlert" class="hidden text-xs font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-1.5">
+        ⚠️ Por favor, preencha seu nome e telefone acima para encaminhar seu agendamento ao WhatsApp!
+      </p>
+
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <!-- Resumo da escolha -->
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold shrink-0">
+            ✓
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="summaryServiceName" class="text-sm font-bold text-white truncate">--</span>
+              <span id="summaryPriceBadge" class="text-xs font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded-md">
+                R$ --
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">
+              📅 <strong id="summaryDateText" class="text-emerald-300">--/--/----</strong> às
+              <strong id="summaryTimeText" class="text-emerald-300">--:--</strong>
+              <span id="summaryDurationText" class="text-slate-400 ml-1">(1h30)</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Botão de Alto Contraste para WhatsApp da Alícia -->
+        <a
+          id="whatsappRedirectBtn"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          onclick="return BookingController.handleWhatsAppClick(event)"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-bold text-sm text-slate-950 bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:from-emerald-300 hover:to-teal-300 active:scale-[0.99] shadow-lg shadow-emerald-500/25 transition-all"
+        >
+          <svg class="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/>
+          </svg>
+          <span>Continuar Agendamento no WhatsApp</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLADOR FRONTEND VANILLA JS MODULAR -->
+  <script>
+    const BookingController = (() => {
+      const STUDIO_WHATSAPP = '5521960003154';
+
+      // Catálogo de Serviços com durações e preços oficiais solicitados
+      const SERVICES = [
+        // Categoria: Cílios
+        {
+          id: 'tufinhos_seda',
+          name: 'Tufinhos de Seda',
+          category: 'cilios',
+          priceDisplay: 'R$ 60 a R$ 70',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Light ou Mega'
+        },
+        {
+          id: 'fio_a_fio_classico',
+          name: 'Fio a Fio Clássico',
+          category: 'cilios',
+          priceDisplay: 'R$ 75,00',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Natural & Elegante'
+        },
+        {
+          id: 'volume_brasileiro',
+          name: 'Volume Brasileiro',
+          category: 'cilios',
+          priceDisplay: 'R$ 80,00',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Mais Pedido ⭐'
+        },
+        {
+          id: 'volume_egipcio_fox',
+          name: 'Volume Egípcio / Fox Eyes',
+          category: 'cilios',
+          priceDisplay: 'R$ 90,00',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Olhar Marcante'
+        },
+        {
+          id: 'mega_brasileiro',
+          name: 'Mega Brasileiro',
+          category: 'cilios',
+          priceDisplay: 'R$ 90,00',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Alto Impacto'
+        },
+        // Categoria: Sobrancelhas & Manutenções
+        {
+          id: 'design_sobrancelha',
+          name: 'Design de Sobrancelha',
+          category: 'sobrancelhas',
+          priceDisplay: 'R$ 25,00',
+          durationMinutes: 30,
+          durationLabel: '30 min',
+          badge: 'Alinhamento'
+        },
+        {
+          id: 'design_henna',
+          name: 'Design com Henna',
+          category: 'sobrancelhas',
+          priceDisplay: 'R$ 35,00',
+          durationMinutes: 60,
+          durationLabel: '1h',
+          badge: 'Design + Henna'
+        },
+        {
+          id: 'manutencao_cilios',
+          name: 'Manutenção de Cílios',
+          category: 'sobrancelhas',
+          priceDisplay: 'R$ 45 a R$ 65',
+          durationMinutes: 90,
+          durationLabel: '1h30',
+          badge: 'Até 20 dias'
+        },
+        {
+          id: 'combo_design_manutencao',
+          name: 'Manutenção + Design Sobrancelha',
+          category: 'sobrancelhas',
+          priceDisplay: 'R$ 85,00',
+          durationMinutes: 120,
+          durationLabel: '2h',
+          badge: 'Combo Especial'
+        }
+      ];
+
+      // Estado reativo do componente
+      const state = {
+        activeCategory: 'cilios',
+        selectedService: SERVICES[2], // Volume Brasileiro por padrão
+        selectedDateIso: '',          // AAAA-MM-DD
+        selectedTime: null,           // HH:mm
+        carouselStartOffset: 0,       // Offset em dias a partir de hoje
+        clientName: '',               // Nome completo da cliente
+        clientPhone: '',              // Telefone / WhatsApp da cliente
+      };
+
+      function formatPhoneMask(raw) {
+        const digits = String(raw || '').replace(/\D/g, '').slice(0, 11);
+        if (!digits) return '';
+        if (digits.length <= 2) return `(${digits}`;
+        if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+        if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+        return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+      }
+
+      // Utilitários de Data locais (fuso local do navegador/cliente)
+      function getTodayLocalIso() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      function addDaysToIso(baseIso, days) {
+        const [y, m, d] = baseIso.split('-').map(Number);
+        const dt = new Date(y, m - 1, d + days);
+        const ny = dt.getFullYear();
+        const nm = String(dt.getMonth() + 1).padStart(2, '0');
+        const nd = String(dt.getDate()).padStart(2, '0');
+        return `${ny}-${nm}-${nd}`;
+      }
+
+      function parseIsoParts(iso) {
+        const [y, m, d] = iso.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        const weekdaysShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return {
+          dateObj: dt,
+          dayNumber: String(d).padStart(2, '0'),
+          monthNumber: String(m).padStart(2, '0'),
+          year: y,
+          weekdayIndex: dt.getDay(), // 0 = Domingo
+          weekdayShort: weekdaysShort[dt.getDay()],
+          monthShort: monthsShort[m - 1],
+          formattedBr: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`,
+          formattedShortBr: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`,
+        };
+      }
+
+      // Inicialização na abertura da página
+      function init() {
+        const todayIso = getTodayLocalIso();
+        const todayParts = parseIsoParts(todayIso);
+
+        // Se hoje for domingo (0), seleciona segunda-feira automaticamente
+        state.selectedDateIso = todayParts.weekdayIndex === 0
+          ? addDaysToIso(todayIso, 1)
+          : todayIso;
+
+        const nativePicker = document.getElementById('nativeDatePicker');
+        if (nativePicker) {
+          nativePicker.min = todayIso;
+          nativePicker.value = state.selectedDateIso;
+        }
+
+        // Restaura nome e telefone salvos localmente (se houver)
+        try {
+          const savedName = localStorage.getItem('studiojf_client_name') || '';
+          const savedPhone = localStorage.getItem('studiojf_client_phone') || '';
+          state.clientName = savedName;
+          state.clientPhone = savedPhone;
+          const pName = document.getElementById('clientNameInput');
+          const pPhone = document.getElementById('clientPhoneInput');
+          const sName = document.getElementById('sheetClientNameInput');
+          const sPhone = document.getElementById('sheetClientPhoneInput');
+          if (pName) pName.value = savedName;
+          if (pPhone) pPhone.value = savedPhone;
+          if (sName) sName.value = savedName;
+          if (sPhone) sPhone.value = savedPhone;
+        } catch (_) {}
+
+        renderCategoryTabs();
+        renderServices();
+        renderDateCarousel();
+        fetchAvailability();
+      }
+
+      // Alterna categoria (Cílios vs Sobrancelhas & Manutenções)
+      function setCategory(category) {
+        state.activeCategory = category;
+        renderCategoryTabs();
+        renderServices();
+      }
+
+      function renderCategoryTabs() {
+        const tabCilios = document.getElementById('tab-cilios');
+        const tabSobrancelhas = document.getElementById('tab-sobrancelhas');
+        const activeClasses = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/25';
+        const inactiveClasses = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white';
+
+        tabCilios.className = state.activeCategory === 'cilios' ? activeClasses : inactiveClasses;
+        tabSobrancelhas.className = state.activeCategory === 'sobrancelhas' ? activeClasses : inactiveClasses;
+      }
+
+      // Renderiza cards de serviço da categoria ativa
+      function renderServices() {
+        const grid = document.getElementById('servicesGrid');
+        const durationBadge = document.getElementById('selectedDurationBadge');
+        if (durationBadge && state.selectedService) {
+          durationBadge.textContent = `⏱️ Duração: ${state.selectedService.durationLabel}`;
+        }
+
+        const filtered = SERVICES.filter((s) => s.category === state.activeCategory);
+
+        grid.innerHTML = filtered.map((srv) => {
+          const isSelected = state.selectedService && state.selectedService.id === srv.id;
+          return `
+            <button
+              type="button"
+              onclick="BookingController.selectService('${srv.id}')"
+              class="text-left p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2 ${
+                isSelected
+                  ? 'bg-gradient-to-br from-pink-500/15 via-[#1e293b] to-amber-500/10 border-pink-500 ring-1 ring-pink-500/50 shadow-lg shadow-pink-500/10'
+                  : 'bg-[#1e293b] border-slate-800 hover:border-slate-700'
+              }"
+            >
+              <div class="flex items-start justify-between gap-2 w-full">
+                <div>
+                  <span class="text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-200'} block">
+                    ${srv.name}
+                  </span>
+                  ${srv.badge ? `<span class="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-slate-800 text-slate-400'}">${srv.badge}</span>` : ''}
+                </div>
+                <div class="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                  isSelected ? 'border-pink-500 bg-pink-500 text-white' : 'border-slate-600'
+                }">
+                  ${isSelected ? '<span class="text-[11px] font-bold">✓</span>' : ''}
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between w-full pt-2 border-t border-slate-800/80 text-xs">
+                <span class="text-slate-400 font-medium">⏱️ ${srv.durationLabel}</span>
+                <span class="font-extrabold text-amber-400">${srv.priceDisplay}</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      function selectService(serviceId) {
+        const found = SERVICES.find((s) => s.id === serviceId);
+        if (!found) return;
+        state.selectedService = found;
+        state.selectedTime = null;
+        hideSummarySheet();
+        renderServices();
+        fetchAvailability();
+      }
+
+      // Renderiza carrossel horizontal de 14 dias a partir do offset
+      function renderDateCarousel() {
+        const container = document.getElementById('dateCarousel');
+        const todayIso = getTodayLocalIso();
+        const itemsHtml = [];
+
+        // Incluímos 1 dia anterior (ontem) apenas no início para demonstrar visualmente o bloqueio de datas passadas
+        const startOffset = state.carouselStartOffset === 0 ? -1 : state.carouselStartOffset;
+        const totalDaysToShow = 14;
+
+        for (let i = startOffset; i < startOffset + totalDaysToShow; i++) {
+          const iso = addDaysToIso(todayIso, i);
+          const parts = parseIsoParts(iso);
+          const isPast = iso < todayIso;
+          const isSunday = parts.weekdayIndex === 0;
+          const isDisabled = isPast || isSunday;
+          const isSelected = iso === state.selectedDateIso;
+
+          let cardStyle = '';
+          if (isDisabled) {
+            cardStyle = 'bg-slate-900/60 border-slate-800/60 text-slate-600 opacity-50 cursor-not-allowed';
+          } else if (isSelected) {
+            cardStyle = 'bg-gradient-to-b from-pink-500 to-fuchsia-600 border-pink-400 text-white shadow-lg shadow-pink-500/25 scale-[1.03]';
+          } else {
+            cardStyle = 'bg-[#1e293b] border-slate-800 text-slate-300 hover:border-pink-500/50 hover:text-white cursor-pointer';
+          }
+
+          itemsHtml.push(`
+            <button
+              type="button"
+              ${isDisabled ? 'disabled' : `onclick="BookingController.selectDate('${iso}')"`}
+              class="min-w-[66px] sm:min-w-[72px] py-2.5 px-2 rounded-2xl border transition-all flex flex-col items-center justify-center shrink-0 ${cardStyle}"
+              title="${isPast ? 'Data passada indisponível' : isSunday ? 'Fechado aos domingos' : parts.formattedBr}"
+            >
+              <span class="text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-pink-100' : 'text-slate-400'}">
+                ${parts.weekdayShort}
+              </span>
+              <span class="text-base sm:text-lg font-extrabold my-0.5">
+                ${parts.dayNumber}
+              </span>
+              <span class="text-[10px] font-medium ${isSelected ? 'text-amber-200' : 'text-slate-400'}">
+                ${isSunday ? 'Fechado' : parts.monthShort}
+              </span>
+            </button>
+          `);
+        }
+
+        container.innerHTML = itemsHtml.join('');
+      }
+
+      function shiftCarousel(daysDelta) {
+        state.carouselStartOffset = Math.max(0, state.carouselStartOffset + daysDelta);
+        renderDateCarousel();
+      }
+
+      function onDateInputChange(newIso) {
+        if (!newIso) return;
+        const todayIso = getTodayLocalIso();
+        if (newIso < todayIso) return;
+        selectDate(newIso);
+      }
+
+      function selectDate(iso) {
+        const todayIso = getTodayLocalIso();
+        if (iso < todayIso) return;
+
+        state.selectedDateIso = iso;
+        state.selectedTime = null;
+        hideSummarySheet();
+
+        const nativePicker = document.getElementById('nativeDatePicker');
+        if (nativePicker) nativePicker.value = iso;
+
+        renderDateCarousel();
+        fetchAvailability();
+      }
+
+      // Busca disponibilidade real no backend (/api/availability)
+      async function fetchAvailability() {
+        const skeleton = document.getElementById('slotsSkeleton');
+        const slotsContainer = document.getElementById('slotsContainer');
+        const closedBox = document.getElementById('closedStateBox');
+        const dateTitle = document.getElementById('selectedDateTitle');
+
+        const parts = parseIsoParts(state.selectedDateIso);
+        if (dateTitle) {
+          dateTitle.textContent = `${parts.weekdayShort}, ${parts.formattedShortBr}`;
+        }
+
+        // Exibe Skeleton Loader
+        skeleton.classList.remove('hidden');
+        slotsContainer.classList.add('hidden');
+        closedBox.classList.add('hidden');
+
+        try {
+          const params = new URLSearchParams({
+            date: state.selectedDateIso,
+            serviceId: state.selectedService.id,
+          });
+
+          const response = await fetch(`/api/availability?${params.toString()}`);
+          const data = await response.json();
+
+          skeleton.classList.add('hidden');
+
+          if (!data.isOpen) {
+            closedBox.classList.remove('hidden');
+            document.getElementById('closedStateTitle').textContent =
+              parts.weekdayIndex === 0 ? 'Domingo — Estúdio Fechado' : 'Data Indisponível';
+            document.getElementById('closedStateMessage').textContent =
+              data.message || 'O Studio JF Designer atende de Segunda a Sexta (09:00 às 19:00) e aos Sábados (08:00 às 18:00).';
+            return;
+          }
+
+          slotsContainer.classList.remove('hidden');
+          renderPeriodSlots('morningGrid', 'morningCountBadge', data.morningSlots || []);
+          renderPeriodSlots('afternoonGrid', 'afternoonCountBadge', data.afternoonSlots || []);
+        } catch (err) {
+          console.error('Erro ao buscar horários:', err);
+          skeleton.classList.add('hidden');
+          closedBox.classList.remove('hidden');
+          document.getElementById('closedStateTitle').textContent = 'Erro de Conexão';
+          document.getElementById('closedStateMessage').textContent =
+            'Não foi possível consultar os horários neste instante. Tente novamente em alguns segundos.';
+        }
+      }
+
+      // Renderiza os botões de horários (Manhã ou Tarde) respeitando a Regra de Ouro de Sigilo
+      function renderPeriodSlots(gridId, badgeId, slots) {
+        const grid = document.getElementById(gridId);
+        const badge = document.getElementById(badgeId);
+
+        const freeCount = slots.filter((s) => s.available).length;
+        if (badge) {
+          badge.textContent = `${freeCount} livre(s)`;
+        }
+
+        if (!slots.length) {
+          grid.innerHTML = `<div class="col-span-full text-xs text-slate-400 py-2">Nenhum horário neste turno.</div>`;
+          return;
+        }
+
+        grid.innerHTML = slots.map((slot) => {
+          const isSelected = state.selectedTime === slot.time;
+
+          // REGRA DE OURO DE SIGILO:
+          // Qualquer horário ocupado ou bloqueio pessoal da Janaína exibe estritamente "Indisponível"
+          if (!slot.available) {
+            return `
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                class="py-3 px-3 rounded-xl bg-slate-900/75 border border-slate-800/80 text-slate-500 cursor-not-allowed flex flex-col items-center justify-center gap-0.5 select-none opacity-65"
+              >
+                <span class="text-xs sm:text-sm font-bold line-through decoration-slate-600">${slot.time}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Indisponível</span>
+              </button>
+            `;
+          }
+
+          // Horário Vago: Verde Esmeralda / Menta interativo
+          return `
+            <button
+              type="button"
+              onclick="BookingController.selectSlot('${slot.time}')"
+              class="py-3 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 ${
+                isSelected
+                  ? 'bg-emerald-500 border-emerald-300 text-slate-950 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-300'
+                  : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/35 hover:border-emerald-400 text-emerald-300'
+              }"
+            >
+              <span class="text-xs sm:text-sm font-extrabold ${isSelected ? 'text-slate-950' : 'text-emerald-300'}">
+                ${slot.time}
+              </span>
+              <span class="text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-slate-900' : 'text-emerald-400/90'}">
+                ${isSelected ? '✓ Selecionado' : 'Disponível'}
+              </span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      // Seleciona um horário livre e abre o resumo com link direto para a Alícia
+      function selectSlot(timeStr) {
+        state.selectedTime = timeStr;
+
+        // Atualiza destaque visual dos botões sem precisar recarregar a API
+        const allMorning = document.querySelectorAll('#morningGrid button:not([disabled])');
+        const allAfternoon = document.querySelectorAll('#afternoonGrid button:not([disabled])');
+        [...allMorning, ...allAfternoon].forEach((btn) => {
+          const timeSpan = btn.querySelector('span:first-child');
+          const statusSpan = btn.querySelector('span:last-child');
+          const isMatch = timeSpan && timeSpan.textContent.trim() === timeStr;
+          if (isMatch) {
+            btn.className = 'py-3 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 bg-emerald-500 border-emerald-300 text-slate-950 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-300';
+            if (timeSpan) timeSpan.className = 'text-xs sm:text-sm font-extrabold text-slate-950';
+            if (statusSpan) {
+              statusSpan.className = 'text-[10px] font-bold uppercase tracking-wider text-slate-900';
+              statusSpan.textContent = '✓ Selecionado';
+            }
+          } else {
+            btn.className = 'py-3 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/35 hover:border-emerald-400 text-emerald-300';
+            if (timeSpan) timeSpan.className = 'text-xs sm:text-sm font-extrabold text-emerald-300';
+            if (statusSpan) {
+              statusSpan.className = 'text-[10px] font-bold uppercase tracking-wider text-emerald-400/90';
+              statusSpan.textContent = 'Disponível';
+            }
+          }
+        });
+
+        showSummarySheet();
+      }
+
+      function onClientInfoInput(source) {
+        const pName = document.getElementById('clientNameInput');
+        const pPhone = document.getElementById('clientPhoneInput');
+        const sName = document.getElementById('sheetClientNameInput');
+        const sPhone = document.getElementById('sheetClientPhoneInput');
+
+        if (source === 'sheet') {
+          state.clientName = sName ? sName.value : '';
+          state.clientPhone = formatPhoneMask(sPhone ? sPhone.value : '');
+          if (sPhone) sPhone.value = state.clientPhone;
+          if (pName) pName.value = state.clientName;
+          if (pPhone) pPhone.value = state.clientPhone;
+        } else {
+          state.clientName = pName ? pName.value : '';
+          state.clientPhone = formatPhoneMask(pPhone ? pPhone.value : '');
+          if (pPhone) pPhone.value = state.clientPhone;
+          if (sName) sName.value = state.clientName;
+          if (sPhone) sPhone.value = state.clientPhone;
+        }
+
+        try {
+          localStorage.setItem('studiojf_client_name', state.clientName.trim());
+          localStorage.setItem('studiojf_client_phone', state.clientPhone.trim());
+        } catch (_) {}
+
+        const alertEl = document.getElementById('clientInfoAlert');
+        if (alertEl && state.clientName.trim().length >= 2 && state.clientPhone.replace(/\D/g, '').length >= 10) {
+          alertEl.classList.add('hidden');
+        }
+
+        updateWhatsAppUrl();
+      }
+
+      function buildWhatsAppMessage() {
+        if (!state.selectedService || !state.selectedDateIso || !state.selectedTime) return '';
+        const parts = parseIsoParts(state.selectedDateIso);
+        const cleanName = (state.clientName || '').trim();
+        const cleanPhone = (state.clientPhone || '').trim();
+
+        let message = `Olá Alícia! Gostaria de agendar ${state.selectedService.name} no dia ${parts.formattedBr} às ${state.selectedTime}.`;
+        if (cleanName) {
+          message += `\nNome: ${cleanName}`;
+        }
+        if (cleanPhone) {
+          message += `\nTelefone: ${cleanPhone}`;
+        }
+        return message;
+      }
+
+      function updateWhatsAppUrl() {
+        const waBtn = document.getElementById('whatsappRedirectBtn');
+        if (!waBtn) return;
+        const message = buildWhatsAppMessage();
+        waBtn.href = `https://wa.me/${STUDIO_WHATSAPP}?text=${encodeURIComponent(message)}`;
+      }
+
+      function handleWhatsAppClick(event) {
+        const cleanName = (state.clientName || '').trim();
+        const phoneDigits = (state.clientPhone || '').replace(/\D/g, '');
+        const alertEl = document.getElementById('clientInfoAlert');
+        const sName = document.getElementById('sheetClientNameInput');
+        const sPhone = document.getElementById('sheetClientPhoneInput');
+
+        if (cleanName.length < 2 || phoneDigits.length < 10) {
+          if (event) event.preventDefault();
+          if (alertEl) alertEl.classList.remove('hidden');
+          if (cleanName.length < 2 && sName) {
+            sName.focus();
+            sName.classList.add('border-amber-400', 'ring-1', 'ring-amber-400');
+          } else if (phoneDigits.length < 10 && sPhone) {
+            sPhone.focus();
+            sPhone.classList.add('border-amber-400', 'ring-1', 'ring-amber-400');
+          }
+          return false;
+        }
+
+        updateWhatsAppUrl();
+        return true;
+      }
+
+      function showSummarySheet() {
+        const sheet = document.getElementById('bookingSummarySheet');
+        if (!state.selectedService || !state.selectedDateIso || !state.selectedTime) return;
+
+        const parts = parseIsoParts(state.selectedDateIso);
+
+        document.getElementById('summaryServiceName').textContent = state.selectedService.name;
+        document.getElementById('summaryPriceBadge').textContent = state.selectedService.priceDisplay;
+        document.getElementById('summaryDateText').textContent = parts.formattedBr;
+        document.getElementById('summaryTimeText').textContent = state.selectedTime;
+        document.getElementById('summaryDurationText').textContent = `(${state.selectedService.durationLabel})`;
+
+        updateWhatsAppUrl();
+        sheet.classList.remove('hidden');
+      }
+
+      function hideSummarySheet() {
+        const sheet = document.getElementById('bookingSummarySheet');
+        if (sheet) sheet.classList.add('hidden');
+      }
+
+      return {
+        init,
+        setCategory,
+        selectService,
+        selectDate,
+        shiftCarousel,
+        onDateInputChange,
+        selectSlot,
+        onClientInfoInput,
+        handleWhatsAppClick,
+      };
+    })();
+
+    document.addEventListener('DOMContentLoaded', BookingController.init);
+  </script>
+</body>
+</html>

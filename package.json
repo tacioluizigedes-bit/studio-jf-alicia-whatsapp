@@ -1,0 +1,52 @@
+{
+  "name": "salon-whatsapp-agent",
+  "version": "1.0.0",
+  "description": "Agente de IA automatizado no WhatsApp para atendimento e agendamento de salão de beleza",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && node scripts/copy-views.js",
+    "start": "node dist/index.js",
+    "start:prod": "node scripts/start-cloud.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "npm run build && node --test test/studio_full_suite.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "whatsapp",
+    "ai",
+    "chatbot",
+    "google-calendar",
+    "beauty-salon",
+    "automation"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@prisma/client": "^6.19.3",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "googleapis": "^140.0.0",
+    "luxon": "^3.4.4",
+    "node-cron": "^4.6.0",
+    "pino": "^10.4.0",
+    "qrcode-terminal": "^0.12.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "^20.12.7",
+    "@types/node-cron": "^3.0.11",
+    "@types/qrcode-terminal": "^0.12.2",
+    "prisma": "^6.19.3",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.4.5"
+  }
+}

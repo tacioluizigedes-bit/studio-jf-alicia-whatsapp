@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum DepositStatus {
+  PENDING
+  RECEIPT_SENT
+  CONFIRMED
+  EXPIRED
+  EXEMPT
+}
+
+enum GeneralStatus {
+  PRE_SCHEDULED
+  CONFIRMED
+  CANCELLED
+}
+
+model Appointment {
+  id                 String        @id @default(uuid())
+  clientName         String
+  whatsappPhone      String
+  service            String
+  appointmentDate    DateTime
+  totalAmount        Decimal
+  depositAmount      Decimal
+  depositStatus      DepositStatus @default(PENDING)
+  generalStatus      GeneralStatus @default(PRE_SCHEDULED)
+  depositDeadline    DateTime
+  confirmedAt        DateTime?
+  notes              String?
+  confirmedBy        String?
+  isFirstAppointment Boolean       @default(true)
+  reminderSent24h    Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([appointmentDate])
+  @@index([depositStatus])
+  @@index([generalStatus])
+  @@index([whatsappPhone])
+}
+
+model BlockedSlot {
+  id          String   @id @default(uuid())
+  title       String   // Ex: "Compromisso Pessoal"
+  reason      String?  // Ex: "Bloqueio Quinzenal"
+  startTime   DateTime
+  endTime     DateTime
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([startTime])
+}

@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark overflow-x-hidden">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Studio JF Designer - Dashboard de Agendamentos & Sinais</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f8',
+              100: '#fce7f3',
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d',
+            },
+            dark: {
+              900: '#0b141a',
+              800: '#111b21',
+              700: '#202c33',
+              600: '#2a3942',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    html, body { max-width: 100vw; overflow-x: hidden; }
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+    .pulse-urgent { animation: pulse-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    .bg-striped-blocked {
+      background: repeating-linear-gradient(
+        45deg,
+        #1e293b,
+        #1e293b 10px,
+        #0f172a 10px,
+        #0f172a 20px
+      );
+    }
+    /* Utilitário para ocultar barra de rolagem mantendo scroll suave ao toque */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @keyframes slideUpSheet {
+      from { transform: translateY(100%); opacity: 0.5; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .bottom-sheet-enter {
+      animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-[#0b141a] text-slate-100 min-h-screen flex flex-col antialiased overflow-x-hidden">
+
+  <!-- TOP NAVBAR (MOBILE-FIRST & RESPONSIVA) -->
+  <header class="border-b border-dark-600 bg-dark-800/95 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-col justify-center">
+      <div class="flex items-center justify-between gap-2">
+        <!-- Marca & Status -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center font-extrabold text-white text-sm sm:text-lg shadow-lg shadow-pink-500/20">
+            JF
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <h1 class="text-sm sm:text-base font-bold text-white tracking-wide truncate">Studio JF Designer</h1>
+              <span class="text-[10px] sm:text-xs bg-pink-500/10 text-pink-400 font-semibold px-2 py-0.5 rounded-full border border-pink-500/20 shrink-0">
+                Gestão Operacional
+              </span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 truncate">
+              <span class="truncate">Atendente: <strong class="text-pink-300">Alícia</strong></span>
+              <span class="hidden xs:inline text-slate-600">•</span>
+              <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="lastUpdatedMobile" class="font-mono text-slate-300 md:hidden">--:--</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações Rápidas (Compactas no Mobile + Menu Drawer / Completas no Desktop) -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <!-- Indicador de sincronização Desktop -->
+          <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400 bg-dark-700 px-3 py-1.5 rounded-lg border border-dark-600">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Sincronização:</span>
+            <span id="lastUpdated" class="font-mono text-slate-200">--:--:--</span>
+          </div>
+
+          <!-- Botão Atualizar -->
+          <button onclick="fetchDashboardData()" title="Recarregar dados" aria-label="Atualizar dados" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center gap-1.5 text-xs font-medium">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span class="hidden md:inline">Atualizar</span>
+          </button>
+
+          <!-- Botão Resumo Semanal Janaína -->
+          <button onclick="openWeeklyReportModal()" title="Resumo Semanal da Janaína via WhatsApp" aria-label="Resumo Semanal Janaína" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 active:scale-95 text-pink-400 border border-pink-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <span class="text-sm leading-none">📊</span>
+            <span class="hidden md:inline">Resumo Semanal Janaína</span>
+          </button>
+
+          <!-- Botão Página de Agendamento da Cliente -->
+          <a href="/agendar" target="_blank" title="Abrir Página de Seleção de Horários da Cliente" aria-label="Agendamento Online" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <span class="text-sm leading-none">🗓️</span>
+            <span class="hidden sm:inline">Agendar Online</span>
+          </a>
+
+          <!-- Botão Abrir Chat Alícia -->
+          <a href="/" target="_blank" title="Abrir Simulador Chat Alícia" aria-label="Abrir Chat Alícia" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 active:scale-95 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
+            <span class="hidden sm:inline">Chat Alícia</span>
+          </a>
+
+          <!-- Botão Menu Colapsável Mobile (Atalhos com Rótulos) -->
+          <button onclick="toggleMobileMenu()" title="Menu de Atalhos" aria-label="Abrir menu de atalhos" class="md:hidden min-h-[40px] min-w-[40px] p-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 border border-dark-600 flex items-center justify-center">
+            <svg id="mobileMenuIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Menu Colapsável Mobile (Drawer/Dropdown) -->
+      <div id="mobileActionDrawer" class="hidden md:hidden mt-2.5 pt-2.5 border-t border-dark-600 grid grid-cols-1 gap-2">
+        <button onclick="openWeeklyReportModal(); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-600/15 text-pink-300 border border-pink-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>📊</span> Resumo Semanal da Janaína</span>
+          <span>➔</span>
+        </button>
+        <a href="/" target="_blank" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-600/15 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>💬</span> Abrir Simulador de Chat da Alícia</span>
+          <span>↗</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 flex flex-col gap-4 sm:gap-6 w-full">
+
+    <!-- 1. NAVEGAÇÃO DE SEMANAS & PERÍODO TEMPORAL -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-dark-800 p-3.5 sm:p-4 rounded-2xl border border-dark-600 shadow-md">
+      <!-- Controles [ < ] [ Semana Atual ] [ > ] Centralizados no Mobile -->
+      <div class="flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button onclick="navigateWeek(-1)" aria-label="Semana anterior" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="navigateCurrentWeek()" class="min-h-[44px] flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-100 text-xs sm:text-sm font-semibold border border-dark-600 transition whitespace-nowrap">
+          Semana Atual
+        </button>
+        <button onclick="navigateWeek(1)" aria-label="Próxima semana" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <!-- Data da Semana logo abaixo no Mobile, à direita no Desktop -->
+      <div class="text-center sm:text-right w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-dark-700/80">
+        <p class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 font-semibold">Semana Selecionada</p>
+        <h2 id="periodLabel" class="text-sm sm:text-lg font-extrabold text-white tracking-tight mt-0.5">Carregando período...</h2>
+      </div>
+    </div>
+
+    <!-- 2. GRID DE CARDS DE MÉTRICAS (KPIs): 1 col Mobile | 2x2 Tablet (md) | 4 cols Desktop (lg) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Card 1: Total Agendamentos -->
+      <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total na Semana</span>
+          <span class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm shrink-0">📅</span>
+        </div>
+        <div class="flex items-baseline justify-between sm:block">
+          <div id="kpiTotalCount" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap">0</div>
+          <p class="text-xs text-slate-400 sm:mt-1">Horários reservados na grade</p>
+        </div>
+      </div>
+
+      <!-- Card 2: Sinais Pendentes (Cliente Nova) -->
+      <div class="bg-gradient-to-br from-amber-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-amber-600/30 flex flex-col justify-between shadow-lg shadow-amber-950/20">
+        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 pulse-urgent shrink-0"></span>
+            Sinais Pendentes
+          </span>
+          <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">⏳</span>
+        </div>
+        <div>
+          <div class="flex items-baseline justify-between sm:justify-start gap-2 flex-wrap">
+            <div id="kpiPendingCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-tight whitespace-nowrap">0</div>
+            <span id="kpiReceiptBadge" class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30 font-semibold hidden whitespace-nowrap">0 c/ comprovante</span>
+          </div>
+          <p id="kpiPendingTotal" class="text-xs text-amber-200/80 mt-1 font-medium">Clientes de 1ª vez aguardando Pix</p>
+        </div>
+      </div>
+
+      <!-- Card 3: Sinais Confirmados / Isentas -->
+      <div class="bg-gradient-to-br from-emerald-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-emerald-600/30 flex flex-col justify-between shadow-lg shadow-emerald-950/20">
+        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Confirmados & Isentas</span>
+          <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold shrink-0">✅</span>
+        </div>
+        <div class="flex items-baseline justify-between sm:block gap-2">
+          <div id="kpiConfirmedTotal" class="text-2xl sm:text-3xl font-extrabold text-emerald-300 tracking-tight whitespace-nowrap">R$ 0,00</div>
+          <p id="kpiConfirmedCount" class="text-xs text-emerald-200/80 sm:mt-1 font-medium truncate">0 agendamento(s) garantido(s)</p>
+        </div>
+      </div>
+
+      <!-- Card 4: Expirados / Cancelados -->
+      <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Expirados / Cancelados</span>
+          <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm font-bold shrink-0">❌</span>
+        </div>
+        <div class="flex items-baseline justify-between sm:block">
+          <div id="kpiExpiredCount" class="text-2xl sm:text-3xl font-extrabold text-slate-300 tracking-tight whitespace-nowrap">0</div>
+          <p id="kpiLossRate" class="text-xs text-slate-400 sm:mt-1 font-medium">0% taxa de cancelamento</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. FILTROS RÁPIDOS (SCROLL HORIZONTAL SUAVE) & CAMPO DE BUSCA 100% MOBILE -->
+    <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+      <!-- Pílulas Deslizáveis (Touch Scrollable sem scrollbar visível) -->
+      <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
+        <button onclick="setFilter('ALL')" id="filter-ALL" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition shadow-sm">
+          Todos (<span id="count-ALL">0</span>)
+        </button>
+        <button onclick="setFilter('PENDING')" id="filter-PENDING" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+          ⏳ Pendentes (<span id="count-PENDING">0</span>)
+        </button>
+        <button onclick="setFilter('EXEMPT')" id="filter-EXEMPT" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+          💖 Isentas (<span id="count-EXEMPT">0</span>)
+        </button>
+        <button onclick="setFilter('CONFIRMED')" id="filter-CONFIRMED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+          ✅ Confirmados (<span id="count-CONFIRMED">0</span>)
+        </button>
+        <button onclick="setFilter('EXPIRED')" id="filter-EXPIRED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+          ❌ Expirados (<span id="count-EXPIRED">0</span>)
+        </button>
+      </div>
+
+      <!-- Barra de Busca (100% da largura no celular) -->
+      <div class="relative w-full md:w-72 shrink-0">
+        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar cliente, procedimento ou telefone..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+    </div>
+
+    <!-- 4A. VISÃO MOBILE & TABLET PEQUENO: LISTA DE CARDS VERTICAIS (block md:hidden) -->
+    <div id="appointmentMobileList" class="block md:hidden space-y-3">
+      <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+        Carregando agendamentos...
+      </div>
+    </div>
+
+    <!-- 4B. VISÃO DESKTOP: TABELA CLÁSSICA DE AGENDAMENTOS & BLOQUEIOS (hidden md:block) -->
+    <div class="hidden md:block bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-dark-700/60 border-b border-dark-600 text-slate-300 uppercase tracking-wider font-semibold">
+            <tr>
+              <th scope="col" class="py-3.5 px-4">Data & Horário</th>
+              <th scope="col" class="py-3.5 px-4">Cliente & Perfil</th>
+              <th scope="col" class="py-3.5 px-4">Serviço & Valores</th>
+              <th scope="col" class="py-3.5 px-4">Status do Sinal</th>
+              <th scope="col" class="py-3.5 px-4 text-right">Ações Operacionais</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentTableBody" class="divide-y divide-dark-700/60 text-slate-300">
+            <tr>
+              <td colspan="5" class="py-12 text-center text-slate-400">Carregando agendamentos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 5. MODAIS (BOTTOM SHEET NO MOBILE / MODAL CENTRAL NO DESKTOP) -->
+
+  <!-- MODAL: APROVAR SINAL -->
+  <div id="confirmModal" onclick="if(event.target === this) closeConfirmModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <!-- Handle bar estilo Bottom Sheet Mobile -->
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-4 sm:hidden"></div>
+
+      <div class="flex items-start gap-3.5 mb-4">
+        <div class="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl sm:text-2xl border border-emerald-500/20">
+          💰
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-white">Confirmar Recebimento de Sinal</h3>
+          <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
+            Ao aprovar o sinal, o agendamento será confirmado e a <strong>Alícia</strong> notificará a cliente via WhatsApp.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-dark-700 p-3.5 rounded-xl border border-dark-600 mb-4 space-y-2 text-xs sm:text-sm">
+        <div class="flex justify-between items-center gap-2"><span class="text-slate-400">Cliente:</span> <strong id="modalClientName" class="text-white text-right truncate">--</strong></div>
+        <div class="flex justify-between items-center gap-2"><span class="text-slate-400">Serviço:</span> <span id="modalService" class="text-slate-200 text-right truncate">--</span></div>
+        <div class="flex justify-between items-center gap-2 pt-1 border-t border-dark-600"><span class="text-slate-400">Valor do Sinal:</span> <strong id="modalDepositAmount" class="text-emerald-400 font-extrabold text-sm sm:text-base">R$ 0,00</strong></div>
+      </div>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Conferente / Operador</label>
+          <input type="text" id="modalOperatorName" value="Janaína Ferreira" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Observações / Comprovante (Opcional)</label>
+          <input type="text" id="modalNotes" placeholder="Ex: Pix recebido às 14:22" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5">
+        <button onclick="closeConfirmModal()" class="w-full sm:w-auto min-h-[46px] px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 text-xs sm:text-sm font-semibold transition">
+          Cancelar
+        </button>
+        <button id="btnSubmitConfirm" onclick="submitConfirmDeposit()" class="w-full sm:w-auto min-h-[46px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-1.5">
+          <span>✅ Aprovar e Disparar WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CANCELAR HORÁRIO -->
+  <div id="cancelModal" onclick="if(event.target === this) closeCancelModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-4 sm:hidden"></div>
+
+      <div class="flex items-start gap-3.5 mb-4">
+        <div class="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xl sm:text-2xl border border-rose-500/20">
+          ⚠️
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-white">Cancelar Agendamento</h3>
+          <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
+            Tem certeza que deseja cancelar este agendamento? O horário será liberado imediatamente na grade.
+          </p>
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Motivo do Cancelamento</label>
+        <input type="text" id="cancelReasonInput" placeholder="Ex: Cliente desistiu / Não enviou sinal" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-rose-500">
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5">
+        <button onclick="closeCancelModal()" class="w-full sm:w-auto min-h-[46px] px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 text-xs sm:text-sm font-semibold transition">
+          Voltar
+        </button>
+        <button id="btnSubmitCancel" onclick="submitCancelAppointment()" class="w-full sm:w-auto min-h-[46px] px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-rose-600/25 transition">
+          Confirmar Cancelamento
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESUMO SEMANAL PARA JANAÍNA -->
+  <div id="weeklyReportModal" onclick="if(event.target === this) closeWeeklyReportModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-3 sm:hidden shrink-0"></div>
+
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-dark-600 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 shrink-0 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center text-xl border border-pink-500/20">
+            📊
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Resumo Semanal do Studio (WhatsApp)</h3>
+            <p class="text-[11px] sm:text-xs text-slate-400">Envio automático todo domingo às 20h00 para a Janaína</p>
+          </div>
+        </div>
+        <button onclick="closeWeeklyReportModal()" class="min-h-[36px] min-w-[36px] rounded-lg bg-dark-700 text-slate-400 hover:text-white text-lg font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 mb-4 space-y-3 pr-1">
+        <div class="bg-dark-900 border border-dark-700 rounded-xl p-3 text-xs">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-slate-400 font-semibold">Destinatária:</span>
+            <span class="text-pink-300 font-mono">Janaína Ferreira</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400 font-semibold">Cron Job:</span>
+            <span class="text-emerald-400 font-mono">0 20 * * 0 (Domingos às 20h)</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Prévia da Mensagem Formatada (WhatsApp):</label>
+          <pre id="weeklyReportPreviewText" class="w-full bg-dark-900 border border-dark-700 rounded-xl p-3 text-xs text-slate-200 font-sans whitespace-pre-wrap leading-relaxed select-all">Carregando resumo da semana...</pre>
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-dark-600 shrink-0">
+        <button onclick="closeWeeklyReportModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 text-xs sm:text-sm font-semibold transition">
+          Fechar
+        </button>
+        <button id="btnTriggerWeeklyReport" onclick="dispatchWeeklyReportNow()" class="w-full sm:w-auto min-h-[44px] px-5 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-pink-600/25 transition flex items-center justify-center gap-1.5">
+          <span>📲 Disparar Agora para Janaína</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION (RESPONSIVO) -->
+  <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:bottom-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastBox" class="bg-dark-700 border border-emerald-500 text-white px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-medium max-w-md ml-auto">
+      <span id="toastIcon" class="shrink-0">✅</span>
+      <span id="toastMsg" class="leading-snug">Mensagem</span>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT DA APLICAÇÃO -->
+  <script>
+    let currentWeekOffset = 0;
+    let currentFilter = 'ALL';
+    let rawAppointments = [];
+    let activeAppointmentId = null;
+
+    function toggleMobileMenu() {
+      const drawer = document.getElementById('mobileActionDrawer');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastBox = document.getElementById('toastBox');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = message;
+      if (type === 'success') {
+        toastBox.className = 'bg-dark-700 border border-emerald-500 text-emerald-200 px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-semibold max-w-md ml-auto';
+        toastIcon.innerText = '✅';
+      } else {
+        toastBox.className = 'bg-dark-700 border border-rose-500 text-rose-200 px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-semibold max-w-md ml-auto';
+        toastIcon.innerText = '❌';
+      }
+
+      toast.classList.remove('translate-y-10', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+      }, 4000);
+    }
+
+    function getWeekRange(offsetWeeks = 0) {
+      const now = new Date();
+      now.setDate(now.getDate() + (offsetWeeks * 7));
+      const day = now.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+      
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const formatLocalDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+      return {
+        startDate: formatLocalDate(monday),
+        endDate: formatLocalDate(sunday)
+      };
+    }
+
+    function navigateWeek(delta) {
+      currentWeekOffset += delta;
+      fetchDashboardData();
+    }
+
+    function navigateCurrentWeek() {
+      currentWeekOffset = 0;
+      fetchDashboardData();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.classList.remove('bg-pink-600', 'text-white');
+        btn.classList.add('bg-dark-700', 'text-slate-300');
+      });
+      const activeBtn = document.getElementById('filter-' + filter);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-dark-700', 'text-slate-300');
+        activeBtn.classList.add('bg-pink-600', 'text-white');
+      }
+      renderTable();
+    }
+
+    function handleSearch() {
+      renderTable();
+    }
+
+    function formatCurrencyBR(value) {
+      return Number(value || 0).toFixed(2).replace('.', ',');
+    }
+
+    function escapeQuotes(str) {
+      return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function formatDatePtBr(str) {
+      if (!str) return '';
+      const map = {
+        monday: 'segunda-feira',
+        tuesday: 'terça-feira',
+        wednesday: 'quarta-feira',
+        thursday: 'quinta-feira',
+        friday: 'sexta-feira',
+        saturday: 'sábado',
+        sunday: 'domingo',
+      };
+      return String(str).replace(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, (m) => map[m.toLowerCase()] || m);
+    }
+
+    async function fetchDashboardData() {
+      const { startDate, endDate } = getWeekRange(currentWeekOffset);
+
+      try {
+        const response = await fetch(`/api/dashboard/weekly?startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) throw new Error('Falha ao carregar dashboard');
+
+        const data = await response.json();
+        const nowStr = new Date().toLocaleTimeString('pt-BR');
+        
+        document.getElementById('periodLabel').innerText = data.period ? data.period.formattedPeriod : 'Semana Selecionada';
+        document.getElementById('lastUpdated').innerText = nowStr;
+        const mobileClock = document.getElementById('lastUpdatedMobile');
+        if (mobileClock) mobileClock.innerText = nowStr.slice(0, 5);
+
+        const metrics = data.metrics || {
+          totalAppointments: 0,
+          pendingDepositsCount: 0,
+          pendingOnlyCount: 0,
+          receiptSentCount: 0,
+          confirmedDepositsCount: 0,
+          confirmedDepositsTotal: 0,
+          expiredDepositsCount: 0,
+          lossRate: 0,
+          exemptCount: 0
+        };
+
+        document.getElementById('kpiTotalCount').innerText = metrics.totalAppointments;
+        document.getElementById('kpiPendingCount').innerText = metrics.pendingDepositsCount;
+        
+        const receiptBadge = document.getElementById('kpiReceiptBadge');
+        if (metrics.receiptSentCount > 0) {
+          receiptBadge.innerText = `${metrics.receiptSentCount} c/ comprovante`;
+          receiptBadge.classList.remove('hidden');
+        } else {
+          receiptBadge.classList.add('hidden');
+        }
+
+        document.getElementById('kpiConfirmedTotal').innerText = `R$ ${formatCurrencyBR(metrics.confirmedDepositsTotal)}`;
+        document.getElementById('kpiConfirmedCount').innerText = `${metrics.confirmedDepositsCount || 0} agendamento(s) garantido(s)`;
+
+        document.getElementById('kpiExpiredCount').innerText = metrics.expiredDepositsCount || 0;
+        document.getElementById('kpiLossRate').innerText = `${metrics.lossRate || 0}% taxa de cancelamento`;
+
+        document.getElementById('count-ALL').innerText = metrics.totalAppointments;
+        document.getElementById('count-PENDING').innerText = metrics.pendingOnlyCount;
+        document.getElementById('count-EXEMPT').innerText = metrics.exemptCount || 0;
+        document.getElementById('count-CONFIRMED').innerText = metrics.confirmedDepositsCount;
+        document.getElementById('count-EXPIRED').innerText = metrics.expiredDepositsCount;
+
+        rawAppointments = data.schedule || data.appointments || [];
+        renderTable();
+      } catch (err) {
+        console.error('Erro na requisição do dashboard:', err);
+        showToast('Erro ao sincronizar dados com o servidor', 'error');
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('appointmentTableBody');
+      const mobileList = document.getElementById('appointmentMobileList');
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      let filtered = rawAppointments;
+
+      if (currentFilter === 'PENDING') {
+        filtered = filtered.filter(item => 
+          item.depositStatus === 'PENDING' && 
+          item.generalStatus !== 'CANCELLED' && 
+          item.overallStatus !== 'CANCELLED'
+        );
+      } else if (currentFilter !== 'ALL') {
+        filtered = filtered.filter(item => item.depositStatus === currentFilter);
+      }
+
+      if (search) {
+        filtered = filtered.filter(item => 
+          (item.clientName || '').toLowerCase().includes(search) || 
+          (item.whatsappPhone || '').includes(search) ||
+          (item.service || '').toLowerCase().includes(search)
+        );
+      }
+
+      if (filtered.length === 0) {
+        const emptyMessage = 'Nenhum agendamento ou bloqueio encontrado para os filtros selecionados.';
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-12 text-center text-slate-400">
+              ${emptyMessage}
+            </td>
+          </tr>
+        `;
+        mobileList.innerHTML = `
+          <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs sm:text-sm text-slate-400">
+            ${emptyMessage}
+          </div>
+        `;
+        return;
+      }
+
+      // 1. RENDERIZAÇÃO DESKTOP (TABELA)
+      tbody.innerHTML = filtered.map(item => {
+        if (item.isBlockedSlot) {
+          return `
+            <tr class="bg-striped-blocked text-slate-300">
+              <td class="py-4 px-4 whitespace-nowrap">
+                <div class="font-bold text-amber-300 text-sm">${item.formattedTime}</div>
+                <div class="text-xs text-slate-400 capitalize">${formatDatePtBr(item.formattedDate)}</div>
+              </td>
+              <td class="py-4 px-4">
+                <div class="font-bold text-slate-200 flex items-center gap-1.5">
+                  <span>🔒</span> ${item.clientName}
+                </div>
+                <span class="text-[11px] text-slate-400">Agenda Indisponível</span>
+              </td>
+              <td class="py-4 px-4">
+                <div class="font-semibold text-slate-300">${item.service}</div>
+                <div class="text-[11px] text-slate-400">${item.notes || ''}</div>
+              </td>
+              <td class="py-4 px-4">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-600">
+                  🚫 Bloqueio de Agenda
+                </span>
+              </td>
+              <td class="py-4 px-4 text-right">
+                <span class="text-xs text-slate-400 font-mono">Compromisso Pessoal</span>
+              </td>
+            </tr>
+          `;
+        }
+
+        const profileBadge = item.isFirstAppointment
+          ? `<span class="text-[10px] bg-purple-500/20 text-purple-300 font-semibold px-2 py-0.5 rounded-full border border-purple-500/30">✨ 1ª Vez</span>`
+          : `<span class="text-[10px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30">💖 Recorrente</span>`;
+
+        let statusBadge = '';
+        if (item.depositStatus === 'EXEMPT') {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            ✨ Isenta de Sinal (Cliente Antiga)
+          </span>`;
+        } else if (item.depositStatus === 'CONFIRMED') {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            Sinal Pago & Confirmado
+          </span>`;
+        } else if (item.depositStatus === 'RECEIPT_SENT') {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 animate-pulse">
+            📄 Comprovante Enviado
+          </span>`;
+        } else if (item.depositStatus === 'PENDING') {
+          let timeBadge = '';
+          if (item.isExpiringSoon) {
+            timeBadge = `<span class="text-[11px] text-amber-300 font-bold pulse-urgent">⚠️ Expira em ${item.timeLeftMinutes} min</span>`;
+          } else if (item.isExpired) {
+            timeBadge = `<span class="text-[11px] text-rose-400 font-semibold">⏰ Prazo vencido</span>`;
+          } else if (item.timeLeftMinutes !== null) {
+            timeBadge = `<span class="text-[11px] text-slate-400">${item.timeLeftMinutes} min restantes</span>`;
+          }
+          statusBadge = `<div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              ⏳ Aguardando Sinal (Pix)
+            </span>
+            <div class="mt-1">${timeBadge}</div>
+          </div>`;
+        } else if (item.depositStatus === 'EXPIRED') {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            ❌ Expirado / Cancelado
+          </span>`;
+        }
+
+        const cleanPhone = (item.whatsappPhone || '').replace(/\D/g, '');
+        const waMsg = encodeURIComponent(`Olá, ${item.clientName}! Aqui é do Studio JF Designer. Tudo bem? Estamos entrando em contato sobre o seu agendamento para ${item.service} do dia ${item.formattedDate} às ${item.formattedTime}.`);
+        const waLink = `https://wa.me/${cleanPhone}?text=${waMsg}`;
+
+        const safeName = escapeQuotes(item.clientName);
+        const safeService = escapeQuotes(item.service);
+
+        let actionButtons = '';
+        if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
+          actionButtons += `
+            <button onclick="openConfirmModal('${item.id}', '${safeName}', '${safeService}', ${item.depositAmount})" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-md shadow-emerald-600/20">
+              Aprovar Sinal
+            </button>
+          `;
+          if (item.depositStatus === 'PENDING') {
+            actionButtons += `
+              <button onclick="markReceipt('${item.id}')" title="Marcar que cliente enviou comprovante" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-cyan-300 font-medium border border-cyan-500/30 transition">
+                📄 Comprovante
+              </button>
+            `;
+          }
+          actionButtons += `
+            <button onclick="openCancelModal('${item.id}')" title="Cancelar horário" class="px-2 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-900/40 text-rose-400 border border-dark-600 transition">
+              ✕
+            </button>
+          `;
+        } else if (item.depositStatus === 'CONFIRMED' || item.depositStatus === 'EXEMPT') {
+          actionButtons = `
+            <span class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              Garantido
+            </span>
+          `;
+        } else {
+          actionButtons = `
+            <span class="text-xs text-slate-500 font-medium">Slot Liberado</span>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-dark-700/40 transition">
+            <td class="py-4 px-4 whitespace-nowrap">
+              <div class="font-bold text-white text-sm">${item.formattedTime}</div>
+              <div class="text-xs text-slate-400 capitalize">${item.formattedDate}</div>
+            </td>
+            <td class="py-4 px-4">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-white">${item.clientName}</span>
+                ${profileBadge}
+              </div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="text-slate-400 font-mono text-[11px]">${item.whatsappPhone}</span>
+                <a href="${waLink}" target="_blank" title="Abrir conversa no WhatsApp" class="text-emerald-400 hover:text-emerald-300">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
+                </a>
+              </div>
+            </td>
+            <td class="py-4 px-4">
+              <div class="font-medium text-slate-200">${item.service}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                Total: R$ ${formatCurrencyBR(item.totalAmount)} • <span class="text-emerald-300 font-semibold">Sinal: R$ ${formatCurrencyBR(item.depositAmount)}</span>
+              </div>
+            </td>
+            <td class="py-4 px-4">
+              ${statusBadge}
+            </td>
+            <td class="py-4 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                ${actionButtons}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // 2. RENDERIZAÇÃO MOBILE & TABLET PEQUENO (CARDS VERTICAIS ERGONÔMICOS)
+      mobileList.innerHTML = filtered.map(item => {
+        if (item.isBlockedSlot) {
+          return `
+            <div class="bg-striped-blocked rounded-2xl border border-slate-700 p-4 shadow-md space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="text-base font-extrabold text-amber-300">${item.formattedTime}</div>
+                  <div class="text-xs text-slate-400 capitalize">${formatDatePtBr(item.formattedDate)}</div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-600 shrink-0">
+                  🚫 Bloqueio Interno
+                </span>
+              </div>
+              <div class="pt-1 border-t border-slate-700/70">
+                <div class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                  <span>🔒</span> ${item.clientName}
+                </div>
+                <div class="text-xs text-slate-300 font-medium mt-0.5">${item.service}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${item.notes || 'Horário trancado na agenda'}</div>
+              </div>
+            </div>
+          `;
+        }
+
+        const profileBadge = item.isFirstAppointment
+          ? `<span class="text-[10px] bg-purple-500/20 text-purple-300 font-semibold px-2 py-0.5 rounded-full border border-purple-500/30 shrink-0">✨ 1ª Vez</span>`
+          : `<span class="text-[10px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30 shrink-0">💖 Recorrente</span>`;
+
+        let mobileStatusBadge = '';
+        let mobileTimeAlert = '';
+        let cardBorderClass = 'border-dark-600';
+
+        if (item.depositStatus === 'EXEMPT') {
+          cardBorderClass = 'border-emerald-500/30';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            ✨ Isenta (Antiga)
+          </span>`;
+        } else if (item.depositStatus === 'CONFIRMED') {
+          cardBorderClass = 'border-emerald-500/30';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            ✅ Sinal Confirmado
+          </span>`;
+        } else if (item.depositStatus === 'RECEIPT_SENT') {
+          cardBorderClass = 'border-cyan-500/40';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 animate-pulse">
+            📄 Comprovante Enviado
+          </span>`;
+        } else if (item.depositStatus === 'PENDING') {
+          cardBorderClass = 'border-amber-500/40';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            ⏳ Pendente • Aguardando Pix
+          </span>`;
+          if (item.isExpiringSoon) {
+            mobileTimeAlert = `<div class="text-[11px] text-amber-300 font-bold pulse-urgent mt-1 text-right">⚠️ Expira em ${item.timeLeftMinutes} min</div>`;
+          } else if (item.isExpired) {
+            mobileTimeAlert = `<div class="text-[11px] text-rose-400 font-semibold mt-1 text-right">⏰ Prazo vencido</div>`;
+          } else if (item.timeLeftMinutes !== null) {
+            mobileTimeAlert = `<div class="text-[11px] text-slate-400 mt-1 text-right">⏳ ${item.timeLeftMinutes} min restantes</div>`;
+          }
+        } else if (item.depositStatus === 'EXPIRED') {
+          cardBorderClass = 'border-rose-500/25';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            ❌ Expirado / Cancelado
+          </span>`;
+        }
+
+        const cleanPhone = (item.whatsappPhone || '').replace(/\D/g, '');
+        const waMsg = encodeURIComponent(`Olá, ${item.clientName}! Aqui é do Studio JF Designer. Tudo bem? Estamos entrando em contato sobre o seu agendamento para ${item.service} do dia ${item.formattedDate} às ${item.formattedTime}.`);
+        const waLink = `https://wa.me/${cleanPhone}?text=${waMsg}`;
+
+        const safeName = escapeQuotes(item.clientName);
+        const safeService = escapeQuotes(item.service);
+
+        let mobileFooterActions = '';
+        if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
+          mobileFooterActions = `
+            <div class="pt-3 border-t border-dark-600 flex flex-col gap-2">
+              <button onclick="openConfirmModal('${item.id}', '${safeName}', '${safeService}', ${item.depositAmount})" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2">
+                <span>✅ Validar Sinal / Aprovar (R$ ${formatCurrencyBR(item.depositAmount)})</span>
+              </button>
+              <div class="flex items-center gap-2">
+                ${item.depositStatus === 'PENDING' ? `
+                  <button onclick="markReceipt('${item.id}')" class="flex-1 min-h-[44px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-cyan-300 font-semibold text-xs border border-cyan-500/30 transition flex items-center justify-center gap-1.5">
+                    <span>📄 Marcar Comprovante</span>
+                  </button>
+                ` : ''}
+                <button onclick="openCancelModal('${item.id}')" class="flex-1 min-h-[44px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-rose-950/50 text-rose-400 font-semibold text-xs border border-rose-500/25 transition flex items-center justify-center gap-1.5">
+                  <span>✕ Cancelar Horário</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (item.depositStatus === 'CONFIRMED' || item.depositStatus === 'EXEMPT') {
+          mobileFooterActions = `
+            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between text-xs">
+              <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                Horário 100% Garantido na Grade
+              </span>
+              <button onclick="openCancelModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-rose-400/90 hover:text-rose-300 text-[11px] font-semibold border border-dark-600">
+                Desmarcar
+              </button>
+            </div>
+          `;
+        } else {
+          mobileFooterActions = `
+            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between text-xs text-slate-500">
+              <span>Vaga liberada automaticamente</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="bg-dark-800 rounded-2xl border ${cardBorderClass} p-4 shadow-lg space-y-3">
+            <!-- Topo do Card: Horário em destaque grande + Badge de Status -->
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="text-xl font-extrabold text-white tracking-tight leading-none">${item.formattedTime}</div>
+                <div class="text-xs text-slate-400 capitalize mt-1 font-medium">${formatDatePtBr(item.formattedDate)}</div>
+              </div>
+              <div class="flex flex-col items-end">
+                ${mobileStatusBadge}
+                ${mobileTimeAlert}
+              </div>
+            </div>
+
+            <!-- Corpo do Card: Cliente + Botão Rápido WhatsApp + Procedimento e Valores -->
+            <div class="bg-dark-900/60 rounded-xl p-3 border border-dark-700 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-sm font-bold text-white truncate">${item.clientName}</span>
+                    ${profileBadge}
+                  </div>
+                  <div class="text-[11px] text-slate-400 font-mono mt-0.5">${item.whatsappPhone}</div>
+                </div>
+                <!-- Botão Rápido WhatsApp -->
+                <a href="${waLink}" target="_blank" title="Conversar no WhatsApp" aria-label="Conversar com ${safeName} no WhatsApp" class="min-h-[42px] px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1.5 shrink-0 transition">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+
+              <div class="pt-2 border-t border-dark-700/80 flex items-center justify-between gap-2 flex-wrap">
+                <div class="text-xs font-semibold text-pink-200 flex items-center gap-1.5">
+                  <span>💅</span>
+                  <span>${item.service}</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="text-slate-400">Total: <strong class="text-slate-200">R$ ${formatCurrencyBR(item.totalAmount)}</strong></span>
+                  <span class="text-slate-600">•</span>
+                  <span class="text-emerald-300 font-bold">Sinal: R$ ${formatCurrencyBR(item.depositAmount)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rodapé do Card: Botões de Ação Touch-Friendly (mínimo 44px) -->
+            ${mobileFooterActions}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openConfirmModal(id, name, service, depositAmount) {
+      activeAppointmentId = id;
+      document.getElementById('modalClientName').innerText = name;
+      document.getElementById('modalService').innerText = service;
+      document.getElementById('modalDepositAmount').innerText = `R$ ${formatCurrencyBR(depositAmount)}`;
+      document.getElementById('modalNotes').value = '';
+      document.getElementById('confirmModal').classList.remove('hidden');
+      document.getElementById('confirmModal').classList.add('flex');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+      document.getElementById('confirmModal').classList.remove('flex');
+      activeAppointmentId = null;
+    }
+
+    async function submitConfirmDeposit() {
+      if (!activeAppointmentId) return;
+      const btn = document.getElementById('btnSubmitConfirm');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-spin inline-block mr-1">↻</span> Processando...`;
+
+      const confirmedBy = document.getElementById('modalOperatorName').value.trim() || 'Operador';
+      const notes = document.getElementById('modalNotes').value.trim();
+
+      try {
+        const res = await fetch(`/api/appointments/${activeAppointmentId}/confirm-deposit`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirmedBy, notes })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Sinal confirmado com sucesso! Cliente e Janaína notificados via WhatsApp.');
+          closeConfirmModal();
+          fetchDashboardData();
+        } else {
+          showToast(result.error || 'Erro ao confirmar sinal.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao confirmar sinal.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>✅ Aprovar e Disparar WhatsApp</span>`;
+      }
+    }
+
+    async function markReceipt(id) {
+      try {
+        const res = await fetch(`/api/appointments/${id}/receipt`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: 'Comprovante recebido pelo operador' })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Comprovante registrado com prioridade no dashboard!');
+          fetchDashboardData();
+        } else {
+          showToast(result.error || 'Erro ao registrar comprovante.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão com o servidor.', 'error');
+      }
+    }
+
+    function openCancelModal(id) {
+      activeAppointmentId = id;
+      document.getElementById('cancelReasonInput').value = '';
+      document.getElementById('cancelModal').classList.remove('hidden');
+      document.getElementById('cancelModal').classList.add('flex');
+    }
+
+    function closeCancelModal() {
+      document.getElementById('cancelModal').classList.add('hidden');
+      document.getElementById('cancelModal').classList.remove('flex');
+      activeAppointmentId = null;
+    }
+
+    async function submitCancelAppointment() {
+      if (!activeAppointmentId) return;
+      const reason = document.getElementById('cancelReasonInput').value.trim() || 'Cancelado pelo operador';
+
+      try {
+        const res = await fetch(`/api/appointments/${activeAppointmentId}/cancel`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Agendamento cancelado e horário liberado com sucesso.');
+          closeCancelModal();
+          fetchDashboardData();
+        } else {
+          showToast(result.error || 'Erro ao cancelar.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro ao cancelar agendamento.', 'error');
+      }
+    }
+
+    async function openWeeklyReportModal() {
+      const modal = document.getElementById('weeklyReportModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      
+      const previewEl = document.getElementById('weeklyReportPreviewText');
+      previewEl.innerText = 'Carregando resumo e métricas da semana...';
+
+      try {
+        const res = await fetch('/api/appointments/weekly-owner-report-preview');
+        const data = await res.json();
+        if (data.success && data.messagePreview) {
+          previewEl.innerText = data.messagePreview;
+        } else {
+          previewEl.innerText = 'Erro ao carregar prévia: ' + (data.error || 'Erro desconhecido');
+        }
+      } catch (err) {
+        previewEl.innerText = 'Erro de comunicação ao obter prévia: ' + err.message;
+      }
+    }
+
+    function closeWeeklyReportModal() {
+      const modal = document.getElementById('weeklyReportModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function dispatchWeeklyReportNow() {
+      const btn = document.getElementById('btnTriggerWeeklyReport');
+      btn.disabled = true;
+      btn.innerHTML = `<span>Enviando...</span>`;
+
+      try {
+        const res = await fetch('/api/appointments/trigger-weekly-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Relatório semanal enviado com sucesso para o WhatsApp da Janaína!');
+          closeWeeklyReportModal();
+        } else {
+          showToast(data.message || 'Erro ao enviar relatório.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao disparar relatório.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>📲 Disparar Agora para Janaína</span>`;
+      }
+    }
+
+    fetchDashboardData();
+    setInterval(fetchDashboardData, 30000);
+  </script>
+</body>
+</html>
