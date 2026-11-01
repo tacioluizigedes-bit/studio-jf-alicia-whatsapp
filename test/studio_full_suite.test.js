@@ -7,6 +7,7 @@
 
 const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
+const { DateTime } = require('luxon');
 
 // Importações dos serviços (ajuste os caminhos conforme sua árvore de pastas)
 const { resolveSenderRole, CONFIG } = require('../src/config/phoneRoutingService');
@@ -171,10 +172,12 @@ describe('--- BATERIA DE TESTES STUDIO JF DESIGNER ---', () => {
 
     test('Cliente às 18:00 para Manutenção de Cílios: bloqueia 18:00, 18:30 e 19:00, liberando apenas às 19:30', async () => {
       const aptService = new AppointmentService();
-      const testDate1800 = new Date('2026-10-22T18:00:00-03:00');
-      const testDate1830 = new Date('2026-10-22T18:30:00-03:00');
-      const testDate1900 = new Date('2026-10-22T19:00:00-03:00');
-      const testDate1930 = new Date('2026-10-22T19:30:00-03:00');
+      const nowInTz = DateTime.now().setZone('America/Sao_Paulo');
+      const baseDt18 = nowInTz.set({ day: 12, hour: 18, minute: 0, second: 0, millisecond: 0 });
+      const testDate1800 = baseDt18.toJSDate();
+      const testDate1830 = baseDt18.set({ minute: 30 }).toJSDate();
+      const testDate1900 = baseDt18.set({ hour: 19, minute: 0 }).toJSDate();
+      const testDate1930 = baseDt18.set({ hour: 19, minute: 30 }).toJSDate();
 
       const created = await prisma.appointment.create({
         data: {
@@ -208,8 +211,10 @@ describe('--- BATERIA DE TESTES STUDIO JF DESIGNER ---', () => {
 
     test('Cliente às 10:00 para Design de Sobrancelha (30 min): bloqueia 10:00 e libera às 10:30', async () => {
       const aptService = new AppointmentService();
-      const testDate1000 = new Date('2026-10-22T10:00:00-03:00');
-      const testDate1030 = new Date('2026-10-22T10:30:00-03:00');
+      const nowInTz10 = DateTime.now().setZone('America/Sao_Paulo');
+      const baseDt10 = nowInTz10.set({ day: 12, hour: 10, minute: 0, second: 0, millisecond: 0 });
+      const testDate1000 = baseDt10.toJSDate();
+      const testDate1030 = baseDt10.set({ minute: 30 }).toJSDate();
 
       const created = await prisma.appointment.create({
         data: {

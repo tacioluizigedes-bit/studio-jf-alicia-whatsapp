@@ -13,25 +13,67 @@
         "min": 15,
         "max": 20
       },
-      "lateMaintenanceFee": 5.00,
+      "lateMaintenanceFee": 5,
       "approvalWorkflow": "Pre-booking / Pending manual confirmation by Janaína based on client profile (new vs returning client)"
     }
   },
   "businessHours": [
-    { "dayOfWeek": 1, "dayName": "Segunda-feira", "open": "09:00", "close": "19:00", "isOpen": true },
-    { "dayOfWeek": 2, "dayName": "Terça-feira", "open": "09:00", "close": "19:00", "isOpen": true },
-    { "dayOfWeek": 3, "dayName": "Quarta-feira", "open": "09:00", "close": "19:00", "isOpen": true },
-    { "dayOfWeek": 4, "dayName": "Quinta-feira", "open": "09:00", "close": "19:00", "isOpen": true },
-    { "dayOfWeek": 5, "dayName": "Sexta-feira", "open": "09:00", "close": "19:00", "isOpen": true },
-    { "dayOfWeek": 6, "dayName": "Sábado", "open": "08:00", "close": "18:00", "isOpen": true },
-    { "dayOfWeek": 0, "dayName": "Domingo", "open": "09:00", "close": "14:00", "isOpen": false }
+    {
+      "dayOfWeek": 1,
+      "dayName": "Segunda-feira",
+      "open": "09:00",
+      "close": "19:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 2,
+      "dayName": "Terça-feira",
+      "open": "09:00",
+      "close": "19:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 3,
+      "dayName": "Quarta-feira",
+      "open": "09:00",
+      "close": "19:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 4,
+      "dayName": "Quinta-feira",
+      "open": "09:00",
+      "close": "19:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 5,
+      "dayName": "Sexta-feira",
+      "open": "09:00",
+      "close": "19:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 6,
+      "dayName": "Sábado",
+      "open": "08:00",
+      "close": "18:00",
+      "isOpen": true
+    },
+    {
+      "dayOfWeek": 0,
+      "dayName": "Domingo",
+      "open": "09:00",
+      "close": "14:00",
+      "isOpen": false
+    }
   ],
   "services": [
     {
       "id": "cilios_tufinhos_light",
       "name": "Colocação Cílios Tufinhos de Seda Light",
       "category": "colocacao_cilios",
-      "price": 60.00,
+      "price": 60,
       "durationMinutes": 90,
       "description": "Aplicação inicial de cílios tufinhos de seda leve (1h30min)."
     },
@@ -39,7 +81,7 @@
       "id": "cilios_tufinhos_mega",
       "name": "Colocação Cílios Tufinhos de Seda Mega Volume",
       "category": "colocacao_cilios",
-      "price": 70.00,
+      "price": 70,
       "durationMinutes": 90,
       "description": "Aplicação de tufinhos de seda com efeito mega volume (1h30min)."
     },
@@ -47,7 +89,7 @@
       "id": "cilios_fio_a_fio_classico",
       "name": "Colocação Cílios Fio a Fio Clássico",
       "category": "colocacao_cilios",
-      "price": 90.00,
+      "price": 90,
       "durationMinutes": 90,
       "description": "Extensão clássica fio a fio para um olhar natural e elegante (1h30min)."
     },
@@ -55,7 +97,7 @@
       "id": "cilios_volume_brasileiro",
       "name": "Colocação Cílios Volume Brasileiro",
       "category": "colocacao_cilios",
-      "price": 100.00,
+      "price": 100,
       "durationMinutes": 90,
       "description": "Volume em Y com leveza e marcante efeito volumoso (1h30min)."
     },
@@ -63,7 +105,7 @@
       "id": "cilios_volume_egipcio",
       "name": "Colocação Cílios Volume Egípcio",
       "category": "colocacao_cilios",
-      "price": 105.00,
+      "price": 105,
       "durationMinutes": 90,
       "description": "Volume em W para preenchimento denso e estruturado (1h30min)."
     },
@@ -71,7 +113,7 @@
       "id": "cilios_volume_fox_eyes",
       "name": "Colocação Cílios Volume Fox Eyes",
       "category": "colocacao_cilios",
-      "price": 100.00,
+      "price": 100,
       "durationMinutes": 90,
       "description": "Mapeamento especial para efeito de olhar gatinho/alongado (1h30min)."
     },
@@ -79,16 +121,15 @@
       "id": "cilios_mega_brasileiro",
       "name": "Colocação Cílios Mega Brasileiro",
       "category": "colocacao_cilios",
-      "price": 110.00,
+      "price": 110,
       "durationMinutes": 90,
       "description": "Super preenchimento tecnológico de alto impacto visual (1h30min)."
     },
-
     {
       "id": "manut_cilios_tufinhos_light",
       "name": "Manutenção Cílios Tufinhos de Seda Light",
       "category": "manutencao_cilios",
-      "price": 40.00,
+      "price": 40,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 40,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -96,7 +137,7 @@
       "id": "manut_cilios_tufinhos_mega",
       "name": "Manutenção Cílios Tufinhos de Seda Mega Volume",
       "category": "manutencao_cilios",
-      "price": 45.00,
+      "price": 45,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 45,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -104,7 +145,7 @@
       "id": "manut_cilios_fio_a_fio_classico",
       "name": "Manutenção Cílios Fio a Fio Clássico",
       "category": "manutencao_cilios",
-      "price": 55.00,
+      "price": 55,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 55,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -112,7 +153,7 @@
       "id": "manut_cilios_volume_brasileiro",
       "name": "Manutenção Cílios Volume Brasileiro",
       "category": "manutencao_cilios",
-      "price": 60.00,
+      "price": 60,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 60,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -120,7 +161,7 @@
       "id": "manut_cilios_volume_egipcio",
       "name": "Manutenção Cílios Volume Egípcio",
       "category": "manutencao_cilios",
-      "price": 65.00,
+      "price": 65,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 65,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -128,7 +169,7 @@
       "id": "manut_cilios_volume_fox_eyes",
       "name": "Manutenção Cílios Volume Fox Eyes",
       "category": "manutencao_cilios",
-      "price": 65.00,
+      "price": 65,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 65,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
@@ -136,16 +177,15 @@
       "id": "manut_cilios_mega_brasileiro",
       "name": "Manutenção Cílios Mega Brasileiro",
       "category": "manutencao_cilios",
-      "price": 65.00,
+      "price": 65,
       "durationMinutes": 90,
       "description": "Manutenção até 20 dias (R$ 65,00 - duração 1h30min). Acima de 20 dias tem taxa de +R$ 5,00."
     },
-
     {
       "id": "design_sobrancelha_simples",
       "name": "Design de Sobrancelha",
       "category": "sobrancelhas",
-      "price": 25.00,
+      "price": 25,
       "durationMinutes": 30,
       "description": "Mapeamento e alinhamento do olhar na pinça (30 min)."
     },
@@ -153,7 +193,7 @@
       "id": "design_sobrancelha_henna",
       "name": "Design com Henna",
       "category": "sobrancelhas",
-      "price": 35.00,
+      "price": 35,
       "durationMinutes": 60,
       "description": "Design personalizado + pigmentação com henna (1h00min)."
     },
@@ -161,7 +201,7 @@
       "id": "combo_henna_manut_cilios",
       "name": "Combo Henna + Manutenção de Cílios",
       "category": "sobrancelhas",
-      "price": 95.00,
+      "price": 95,
       "durationMinutes": 120,
       "description": "Design com Henna + Manutenção de Cílios (2h00min)."
     },
@@ -169,24 +209,31 @@
       "id": "combo_manut_cilios_design_sobrancelha",
       "name": "Combo Manutenção de Cílios + Design de Sobrancelha",
       "category": "sobrancelhas",
-      "price": 85.00,
+      "price": 85,
       "durationMinutes": 120,
       "description": "Manutenção de Cílios (1h30) + Design simples de sobrancelha (30 min) = 2h00min."
     },
-
     {
       "id": "combo_dep_buco_axila",
       "name": "Combo Depilação: Buço + Axila",
       "category": "combos_depilacao",
-      "price": 30.00,
+      "price": 30,
       "durationMinutes": 45,
       "description": "Depilação de buço e axila com cera especial."
+    },
+    {
+      "id": "combo_dep_axila_virilha",
+      "name": "Combo Depilação: Axila + Virilha",
+      "category": "combos_depilacao",
+      "price": 65,
+      "durationMinutes": 60,
+      "description": "Depilação completa de axilas e virilha."
     },
     {
       "id": "combo_dep_buco_axila_meia_perna",
       "name": "Combo Depilação: Buço + Axila + Meia Perna",
       "category": "combos_depilacao",
-      "price": 55.00,
+      "price": 55,
       "durationMinutes": 75,
       "description": "Depilação de buço, axila e 1/2 perna."
     },
@@ -194,7 +241,7 @@
       "id": "combo_dep_buco_axila_perna_completa",
       "name": "Combo Depilação: Buço + Axila + Perna Completa",
       "category": "combos_depilacao",
-      "price": 60.00,
+      "price": 60,
       "durationMinutes": 90,
       "description": "Depilação de buço, axila e perna inteira."
     },
@@ -202,7 +249,7 @@
       "id": "combo_dep_buco_axila_virilha_total",
       "name": "Combo Depilação: Buço + Axila + Virilha Total",
       "category": "combos_depilacao",
-      "price": 70.00,
+      "price": 70,
       "durationMinutes": 90,
       "description": "Depilação de buço, axila e virilha total."
     },
@@ -210,7 +257,7 @@
       "id": "combo_dep_buco_axila_virilha_meia_perna",
       "name": "Combo Depilação: Buço + Axila + Virilha Completa + 1/2 Perna",
       "category": "combos_depilacao",
-      "price": 85.00,
+      "price": 85,
       "durationMinutes": 90,
       "description": "Buço, axila, virilha completa e meia perna."
     },
@@ -218,16 +265,15 @@
       "id": "combo_dep_buco_axila_virilha_perna_completa",
       "name": "Combo Depilação VIP Completo: Buço + Axila + Virilha Completa + Perna Completa",
       "category": "combos_depilacao",
-      "price": 100.00,
+      "price": 100,
       "durationMinutes": 105,
       "description": "Pacote completo de depilação corporal."
     },
-
     {
       "id": "dep_faixa_umbigo",
       "name": "Depilação Faixa do Umbigo",
       "category": "depilacao_unitaria",
-      "price": 15.00,
+      "price": 15,
       "durationMinutes": 30,
       "description": "Depilação da faixa do umbigo."
     },
@@ -235,7 +281,7 @@
       "id": "dep_mento",
       "name": "Depilação Mento (Queixo)",
       "category": "depilacao_unitaria",
-      "price": 15.00,
+      "price": 15,
       "durationMinutes": 30,
       "description": "Depilação da região do mento/queixo."
     },
@@ -243,7 +289,7 @@
       "id": "dep_buco",
       "name": "Depilação Buço",
       "category": "depilacao_unitaria",
-      "price": 20.00,
+      "price": 20,
       "durationMinutes": 30,
       "description": "Depilação de buço."
     },
@@ -251,7 +297,7 @@
       "id": "dep_axila",
       "name": "Depilação Axila",
       "category": "depilacao_unitaria",
-      "price": 25.00,
+      "price": 25,
       "durationMinutes": 40,
       "description": "Depilação de axilas."
     },
@@ -259,7 +305,7 @@
       "id": "dep_rosto_completo",
       "name": "Depilação Rosto Completo",
       "category": "depilacao_unitaria",
-      "price": 30.00,
+      "price": 30,
       "durationMinutes": 40,
       "description": "Depilação facial completa."
     },
@@ -267,7 +313,7 @@
       "id": "dep_meia_perna",
       "name": "Depilação Meia Perna",
       "category": "depilacao_unitaria",
-      "price": 40.00,
+      "price": 40,
       "durationMinutes": 45,
       "description": "Depilação de meia perna."
     },
@@ -275,7 +321,7 @@
       "id": "dep_virilha_simples",
       "name": "Depilação Virilha Simples",
       "category": "depilacao_unitaria",
-      "price": 45.00,
+      "price": 45,
       "durationMinutes": 45,
       "description": "Depilação de virilha simples (biquíni)."
     },
@@ -283,7 +329,7 @@
       "id": "dep_perna_inteira",
       "name": "Depilação Perna Inteira",
       "category": "depilacao_unitaria",
-      "price": 50.00,
+      "price": 50,
       "durationMinutes": 50,
       "description": "Depilação de perna completa."
     },
@@ -291,7 +337,7 @@
       "id": "dep_virilha_total",
       "name": "Depilação Virilha Total",
       "category": "depilacao_unitaria",
-      "price": 60.00,
+      "price": 60,
       "durationMinutes": 60,
       "description": "Depilação de virilha total."
     }

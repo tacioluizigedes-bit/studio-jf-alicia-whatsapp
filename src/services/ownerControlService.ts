@@ -225,6 +225,23 @@ export function isOwnerNegativeConfirmation(text: string): boolean {
  * Detecta se a mensagem da Janaína é uma intenção de consulta de agenda
  * Suporta perguntas diretas, dias da semana, "e nos próximos dias?", "quais agendamentos temos confirmados?", "pendentes", etc.
  */
+
+/**
+ * Detecta se a mensagem da Janaína é uma pergunta sobre HORÁRIOS LIVRES / DISPONÍVEIS
+ * Ex: "Qual outro horário disponível hoje para agendamento?", "tem vaga hoje?", "qual o próximo horário disponível?"
+ */
+export function isOwnerAvailabilityQueryIntent(text: string): boolean {
+  if (isOwnerBookingIntent(text) || isOwnerUnblockIntent(text) || isOwnerConfirmDepositIntent(text)) {
+    return false;
+  }
+  const norm = normalizeText(text);
+  return (
+    /\b(outro hor[aá]rio|outros hor[aá]rios|pr[oó]ximo hor[aá]rio|pr[oó]ximos hor[aá]rios|hor[aá]rio(?:s)? livre(?:s)?|vaga(?:s)? livre(?:s)?|hor[aá]rios dispon[ií]veis|hor[aá]rio dispon[ií]vel|disponibilidade|tem vaga|tem hor[aá]rio|quais hor[aá]rios est[aã]o livres|qual o pr[oó]ximo|algum hor[aá]rio|vagas hoje|vaga hoje)\b/i.test(
+      norm
+    )
+  );
+}
+
 export function isScheduleQueryIntent(text: string): boolean {
   if (isOwnerBookingIntent(text) || isOwnerUnblockIntent(text) || isOwnerConfirmDepositIntent(text)) {
     return false;
@@ -364,6 +381,13 @@ export async function handleOwnerCommands(
 
   // COMANDO 5: Consulta Flexível de Agenda (NLP / Regex com datas relativas, específicas e próximos dias)
   // Exemplo: "Alícia, o que temos pra amanhã?", "quais agendamentos temos confirmados?", "e nos próximos dias?", "minha agenda"
+    // COMANDO 1.8: Pergunta sobre Próximos Horários Disponíveis / Vagas Livres
+  if (isOwnerAvailabilityQueryIntent(cleanText)) {
+    const { targetDate } = parseDateFromQuery(cleanText);
+    const reply = await reportAvailableSlotsToOwner(whatsappClient, ownerPhone, targetDate, cleanText);
+    return { status: 'success', action: 'available_slots', reply, message: reply, response: reply };
+  }
+
   if (isScheduleQueryIntent(cleanText)) {
     const parsed = parseDateFromQuery(cleanText);
     if (isMultiDayOrStatusQuery(cleanText, parsed.relativeType)) {
@@ -496,7 +520,7 @@ export async function reportDailyAgenda(
 
     eventsList.push({
       time: aptDt.toFormat('HH:mm'),
-      text: `• *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${apt.clientName} (${apt.service}) ${statusLabel}`,
+      text: `• *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${apt.clientName} (${displayService}) ${statusLabel}`,
       sortDt: aptDt,
       isBlock: false,
     });
@@ -705,41 +729,32 @@ export async function handleBlockSlot(
 ): Promise<string> {
   const tz = SALON_CONFIG.timezone;
   const now = DateTime.now().setZone(tz);
+  const parsedDate = parseDateFromQuery(rawText);
 
-  // Parsing da Data: DD/MM ou DD/MM/YYYY
-  const dateMatch = rawText.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
-  let targetYear = now.year;
-  let targetMonth = now.month;
-  let targetDay = now.day;
+  const targetDt = DateTime.fromJSDate(parsedDate.targetDate, { zone: tz });
+  let targetYear = targetDt.year;
+  let targetMonth = targetDt.month;
+  let targetDay = targetDt.day;
 
-  if (dateMatch) {
-    targetDay = parseInt(dateMatch[1], 10);
-    targetMonth = parseInt(dateMatch[2], 10);
-    if (dateMatch[3]) {
-      targetYear = parseInt(dateMatch[3], 10);
-      if (targetYear < 100) targetYear += 2000;
-    }
-  } else if (rawText.toLowerCase().includes('amanhã') || rawText.toLowerCase().includes('amanha')) {
-    const tomorrow = now.plus({ days: 1 });
-    targetYear = tomorrow.year;
-    targetMonth = tomorrow.month;
-    targetDay = tomorrow.day;
-  }
-
-  let startHour = 13;
+  let startHour = -1;
   let startMinute = 0;
-  let endHour = 16;
+  let endHour = -1;
   let endMinute = 0;
 
-  // Se for "folga", bloqueia o expediente todo
+  // 1. Caso Folga do dia inteiro
   if (rawText.toLowerCase().includes('folga')) {
     startHour = 8;
     startMinute = 0;
     endHour = 19;
     endMinute = 0;
   } else {
-    // Parsing de horários: "das 14:00 às 16:00" ou "14h às 16h" ou "14:00 as 16:00"
-    const timeRangeMatch = rawText.match(
+    // Limpa expressões de data antes do regex de horas para evitar "dia 28" ser interpretado como hora 28
+    const cleanedForTime = rawText
+      .replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g, '')
+      .replace(/\bdia\s+\d{1,2}\b/gi, '');
+
+    // 2. Parsing de intervalo: "das 14:00 às 16:00" ou "14h às 16h" ou "14:00 as 16:00"
+    const timeRangeMatch = cleanedForTime.match(
       /(?:das?|de)?\s*(\d{1,2})(?::(\d{2}))?h?\s*(?:às|as|ate|até|-)\s*(\d{1,2})(?::(\d{2}))?h?/i
     );
     if (timeRangeMatch) {
@@ -747,7 +762,40 @@ export async function handleBlockSlot(
       startMinute = timeRangeMatch[2] ? parseInt(timeRangeMatch[2], 10) : 0;
       endHour = parseInt(timeRangeMatch[3], 10);
       endMinute = timeRangeMatch[4] ? parseInt(timeRangeMatch[4], 10) : 0;
+    } else {
+      // 3. Parsing de horário único/pontual: "Bloquear vaga às 20:40 hoje" ou "bloquear 20:40" ou "bloquear às 14h"
+      const singleTimeMatch = cleanedForTime.match(
+        /(?:às|as|para|das|de)?\s*(\d{1,2})(?:[:h](\d{2}))?\s*(?:hs|hrs|h|horas)?\b/i
+      );
+      if (singleTimeMatch && singleTimeMatch[1]) {
+        const parsedH = parseInt(singleTimeMatch[1], 10);
+        if (parsedH >= 0 && parsedH <= 23) {
+          startHour = parsedH;
+          startMinute = singleTimeMatch[2] ? parseInt(singleTimeMatch[2], 10) : 0;
+
+          // Se informou só início (ex: 20:40), bloqueia 1 hora (20:40 às 21:40)
+          endHour = startHour + 1;
+          endMinute = startMinute;
+          if (endHour >= 24) {
+            endHour = 23;
+            endMinute = 59;
+          }
+        }
+      }
     }
+  }
+
+  if (startHour === -1 || endHour === -1) {
+    const errorMsg =
+      `Jana, não consegui identificar os horários para o bloqueio. 😅\n\n` +
+      `Por favor, use o formato:\n` +
+      `• Intervalo: *"Bloquear hoje das 14:00 às 16:00"*\n` +
+      `• Horário específico: *"Bloquear vaga às 20:40 hoje"*\n` +
+      `• Folga: *"Folga dia 22/10"* ✨`;
+    if (whatsappClient) {
+      await sendHumanizedMessage(whatsappClient, ownerPhone, errorMsg, 4000);
+    }
+    return errorMsg;
   }
 
   const startDt = DateTime.fromObject(
@@ -760,25 +808,70 @@ export async function handleBlockSlot(
     { zone: tz }
   );
 
-  if (!startDt.isValid || !endDt.isValid) {
-    const errorMsg =
-      `Jana, não consegui identificar os horários do bloqueio. 😅\n\n` +
-      `Por favor, use o formato:\n` +
-      `"Bloquear [data] das [início] às [fim]"\n` +
-      `Exemplo: "Bloquear 20/10 das 14:00 às 16:00" ou "Folga dia 22/10". ✨`;
-    if (whatsappClient) {
-      await sendHumanizedMessage(whatsappClient, ownerPhone, errorMsg, 4000);
+  // 4. REGRA DE SEGURANÇA: Verifica se existem clientes já agendadas no período!
+  const startJs = startDt.toJSDate();
+  const endJs = endDt.toJSDate();
+
+  const dayStart = startDt.startOf('day').toJSDate();
+  const dayEnd = endDt.endOf('day').toJSDate();
+
+  const dayAppointments = await prisma.appointment.findMany({
+    where: {
+      generalStatus: { not: 'CANCELLED' },
+      depositStatus: { not: 'EXPIRED' },
+      appointmentDate: {
+        gte: dayStart,
+        lte: dayEnd,
+      },
+    },
+    orderBy: { appointmentDate: 'asc' },
+  });
+
+  const conflictingAppointments = dayAppointments.filter((a) => {
+    const aStartMs = a.appointmentDate.getTime();
+    let srv = a.service;
+    if (/studio\s*jf|procedimento\s*studio/i.test(srv)) {
+      const noteMatch = (a.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      srv = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
     }
-    return errorMsg;
+    const dur = inferAppointmentDurationMinutes(srv);
+    const aEndMs = aStartMs + dur * 60 * 1000;
+    return aStartMs < endJs.getTime() && aEndMs > startJs.getTime();
+  });
+
+  if (conflictingAppointments.length > 0) {
+    const aptsList = conflictingAppointments.map(a => {
+      const aTime = DateTime.fromJSDate(a.appointmentDate, { zone: tz }).toFormat('HH:mm');
+      let srv = a.service;
+      if (/studio\s*jf|procedimento\s*studio/i.test(srv)) {
+        const noteMatch = (a.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+        srv = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
+      }
+      return `• *${a.clientName}* às ${aTime} (${srv})`;
+    }).join('\n');
+
+    const warningMsg =
+      `⚠️ *Atenção, Jana! Conflito de Horário!* ⚠️\n\n` +
+      `No período que você solicitou bloquear (*${startDt.toFormat('HH:mm')} às ${endDt.toFormat('HH:mm')}*), já existem clientes agendadas na sua grade:\n\n` +
+      `${aptsList}\n\n` +
+      `🔒 O bloqueio *NÃO* foi aplicado para evitar que atendimentos marcados sejam perdidos.\n\n` +
+      `Se você realmente precisa bloquear esse horário:\n` +
+      `1️⃣ Desmarque a cliente primeiro (ex: *"Desmarcar cliente [Nome]"*)\n` +
+      `2️⃣ Ou ajuste o intervalo do bloqueio para não coincidir com elas! 💕`;
+
+    if (whatsappClient) {
+      await sendHumanizedMessage(whatsappClient, ownerPhone, warningMsg, 5000);
+    }
+    return warningMsg;
   }
 
-  // Persiste o bloqueio no SQLite via Prisma
+  // 5. Se livre de conflitos, cria o bloqueio com sigilo absoluto
   await prisma.blockedSlot.create({
     data: {
       title: 'Compromisso Pessoal',
       reason: 'INTERNAL_UNAVAILABLE',
-      startTime: startDt.toJSDate(),
-      endTime: endDt.toJSDate(),
+      startTime: startJs,
+      endTime: endJs,
       isRecurring: false,
     },
   });
@@ -1287,3 +1380,193 @@ export default {
   executePendingOwnerAction,
   pendingOwnerConfirmations,
 };
+
+
+/**
+ * Calcula e relata para a Janaína os horários e vagas livres após o último atendimento do dia
+ */
+export async function reportAvailableSlotsToOwner(
+  whatsappClient: WhatsAppClientLike | null | undefined,
+  ownerPhone: string,
+  targetDate: Date,
+  rawText: string
+): Promise<string> {
+  const tz = SALON_CONFIG.timezone;
+  const targetDt = DateTime.fromJSDate(targetDate, { zone: tz });
+  const dayStart = targetDt.startOf('day').toJSDate();
+  const dayEnd = targetDt.endOf('day').toJSDate();
+
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      generalStatus: { not: 'CANCELLED' },
+      depositStatus: { not: 'EXPIRED' },
+      appointmentDate: { gte: dayStart, lte: dayEnd },
+    },
+    orderBy: { appointmentDate: 'asc' },
+  });
+
+  const blockedSlots = await prisma.blockedSlot.findMany({
+    where: {
+      startTime: { lt: dayEnd },
+      endTime: { gt: dayStart },
+    },
+    orderBy: { startTime: 'asc' },
+  });
+
+  const busyWindows: Array<{ startMs: number; endMs: number; label: string }> = [];
+  for (const apt of appointments) {
+    const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
+    let serviceName = apt.service;
+    if (/studio\s*jf|procedimento\s*studio/i.test(serviceName)) {
+      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      serviceName = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
+    }
+    const dur = inferAppointmentDurationMinutes(serviceName);
+    const end = aptDt.plus({ minutes: dur });
+    busyWindows.push({
+      startMs: aptDt.toMillis(),
+      endMs: end.toMillis(),
+      label: `${apt.clientName} (${aptDt.toFormat('HH:mm')} às ${end.toFormat('HH:mm')})`,
+    });
+  }
+
+  for (const bs of blockedSlots) {
+    const s = DateTime.fromJSDate(bs.startTime, { zone: tz });
+    const e = DateTime.fromJSDate(bs.endTime, { zone: tz });
+    busyWindows.push({
+      startMs: s.toMillis(),
+      endMs: e.toMillis(),
+      label: `Bloqueio (${s.toFormat('HH:mm')} às ${e.toFormat('HH:mm')})`,
+    });
+  }
+
+  // Verifica bloqueio quinzenal de terça-feira
+  const midDayCheck = targetDt.set({ hour: 13, minute: 0 }).toJSDate();
+  if (isBiweeklyTuesdayBlocked(midDayCheck, 60, tz)) {
+    const tStart = targetDt.set({ hour: 13, minute: 0 });
+    const tEnd = targetDt.set({ hour: 15, minute: 30 });
+    busyWindows.push({
+      startMs: tStart.toMillis(),
+      endMs: tEnd.toMillis(),
+      label: `Bloqueio Quinzenal (13:00 às 15:30)`,
+    });
+  }
+
+  busyWindows.sort((a, b) => a.startMs - b.startMs);
+
+  const isSaturday = targetDt.weekday === 6;
+  const openHour = isSaturday ? 8 : 9;
+  const closeHour = isSaturday ? 18 : 20;
+  const closeMin = isSaturday ? 0 : 40;
+
+  const openDt = targetDt.set({ hour: openHour, minute: 0, second: 0, millisecond: 0 });
+  const closeDt = targetDt.set({ hour: closeHour, minute: closeMin, second: 0, millisecond: 0 });
+
+  // Detecção de horário de corte "após / depois das HH:mm"
+  const afterMatch = rawText.match(/(?:ap[oó]s|depois\s+d[ae]s?|a\s+partir\s+d[ae]s?)\s*(\d{1,2})(?:[:h](\d{2}))?/i);
+  let filterAfterDt: DateTime | null = null;
+  if (afterMatch) {
+    const h = parseInt(afterMatch[1], 10);
+    const m = afterMatch[2] ? parseInt(afterMatch[2], 10) : 0;
+    filterAfterDt = targetDt.set({ hour: h, minute: m, second: 0, millisecond: 0 });
+  }
+
+  const rawIntervals: Array<{ start: DateTime; end: DateTime }> = [];
+  let cursor = openDt;
+
+  for (const busy of busyWindows) {
+    const bStart = DateTime.fromMillis(busy.startMs, { zone: tz });
+    const bEnd = DateTime.fromMillis(busy.endMs, { zone: tz });
+
+    if (bStart > cursor && cursor < closeDt) {
+      const intEnd = bStart < closeDt ? bStart : closeDt;
+      if (intEnd.diff(cursor, 'minutes').minutes >= 30) {
+        rawIntervals.push({ start: cursor, end: intEnd });
+      }
+    }
+    if (bEnd > cursor) {
+      cursor = bEnd;
+    }
+  }
+
+  if (cursor < closeDt) {
+    if (closeDt.diff(cursor, 'minutes').minutes >= 30) {
+      rawIntervals.push({ start: cursor, end: closeDt });
+    }
+  }
+
+  // Aplica filtro de "após" se fornecido
+  let freeIntervals = rawIntervals;
+  if (filterAfterDt) {
+    const fDt = filterAfterDt;
+    freeIntervals = [];
+    for (const interval of rawIntervals) {
+      if (interval.end <= fDt) continue;
+      const effectiveStart = interval.start < fDt ? fDt : interval.start;
+      if (interval.end.diff(effectiveStart, 'minutes').minutes >= 30) {
+        freeIntervals.push({ start: effectiveStart, end: interval.end });
+      }
+    }
+  }
+
+  const formattedDate = targetDt.toFormat('dd/MM');
+  const weekdayName = targetDt.setLocale('pt-BR').toFormat('cccc');
+  const capWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1);
+
+  if (freeIntervals.length === 0) {
+    const reason = filterAfterDt ? `após as ${filterAfterDt.toFormat('HH:mm')}` : `para hoje (${formattedDate} - ${capWeekday})`;
+    const msg = `Jana, ${reason} a sua grade já está 100% preenchida! Não temos outros horários livres até o encerramento do expediente (${closeDt.toFormat('HH:mm')}). ✨`;
+    if (whatsappClient) {
+      await sendHumanizedMessage(whatsappClient, ownerPhone, msg, 3500);
+    }
+    return msg;
+  }
+
+  // Determina o próximo horário disponível
+  // Se a consulta foi geral ("qual outro horário disponível hoje?") e temos atendimentos agendados,
+  // localiza o intervalo livre imediatamente após os atendimentos agendados
+  let chosenInterval = freeIntervals[0];
+  let afterBusyEvent: { startMs: number; endMs: number; label: string } | null = null;
+
+  if (!filterAfterDt && busyWindows.length > 0) {
+    // Procura o primeiro intervalo que começa após ou durante os atendimentos
+    const lastBusy = busyWindows[busyWindows.length - 1];
+    const postBusyInterval = freeIntervals.find(i => i.start.toMillis() >= lastBusy.endMs);
+    if (postBusyInterval) {
+      chosenInterval = postBusyInterval;
+      afterBusyEvent = lastBusy;
+    }
+  }
+
+  const nextAvailableTime = chosenInterval.start.toFormat('HH:mm');
+
+  let contextText = '';
+  if (filterAfterDt) {
+    contextText = `Após as *${filterAfterDt.toFormat('HH:mm')}*, o próximo horário disponível é logo às *${nextAvailableTime}*! ✨\n\n`;
+  } else if (afterBusyEvent) {
+    const lastEnd = DateTime.fromMillis(afterBusyEvent.endMs, { zone: tz }).toFormat('HH:mm');
+    contextText = `O próximo horário disponível na grade (após o término do atendimento das ${lastEnd}) é logo às *${nextAvailableTime}*! ✨\n\n`;
+  } else {
+    contextText = `O próximo horário disponível hoje é às *${nextAvailableTime}*! ✨\n\n`;
+  }
+
+  let intervalsListText = `Horários livres na grade (${formattedDate} - ${capWeekday}):\n`;
+  for (const interval of freeIntervals) {
+    const diffMin = Math.round(interval.end.diff(interval.start, 'minutes').minutes);
+    const hours = Math.floor(diffMin / 60);
+    const mins = diffMin % 60;
+    const durStr = hours > 0 ? (mins > 0 ? `${hours}h${mins}min` : `${hours}h`) : `${mins}min`;
+    intervalsListText += `• *${interval.start.toFormat('HH:mm')} às ${interval.end.toFormat('HH:mm')}* (${durStr} livres)\n`;
+  }
+
+  const fullMsg =
+    `📋 *Horários Disponíveis, Jana!* ✨\n\n` +
+    contextText +
+    intervalsListText +
+    `\nSe quiser agendar alguma cliente, é só me mandar: *"Marcar cliente [Nome] às [Horário] [Procedimento]"*! 💕`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, ownerPhone, fullMsg, 4000);
+  }
+  return fullMsg;
+}

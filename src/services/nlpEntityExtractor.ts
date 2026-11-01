@@ -156,7 +156,36 @@ export function extractService(text: string, currentStep?: string): ExtractedSer
     if (found) return found as any;
   }
 
-  // Depilação
+  // Depilação - Combo Axila + Virilha
+  if (norm.includes('axila') && (norm.includes('virilha') || norm.includes('virilia'))) {
+    const found = SALON_CONFIG.services.find((s) => s.id === 'combo_dep_axila_virilha');
+    if (found) return found as any;
+    return {
+      id: 'combo_dep_axila_virilha',
+      name: 'Combo Depilação: Axila + Virilha',
+      price: 65.00,
+      durationMinutes: 60,
+      category: 'combos_depilacao',
+    };
+  }
+
+  // Depilação - Virilha Avulsa
+  if (norm.includes('virilha') || norm.includes('virilia')) {
+    if (norm.includes('total') || norm.includes('completa')) {
+      const found = SALON_CONFIG.services.find((s) => s.id === 'dep_virilha_total');
+      if (found) return found as any;
+    }
+    const found = SALON_CONFIG.services.find((s) => s.id === 'dep_virilha_simples');
+    if (found) return found as any;
+  }
+
+  // Depilação - Axila Avulsa
+  if (norm.includes('axila') || norm.includes('axilas')) {
+    const found = SALON_CONFIG.services.find((s) => s.id === 'dep_axila');
+    if (found) return found as any;
+  }
+
+  // Depilação - Combos com buço
   if (norm.includes('buco') && norm.includes('axila')) {
     const found = SALON_CONFIG.services.find((s) => s.id === 'combo_dep_buco_axila');
     if (found) return found as any;
@@ -332,6 +361,16 @@ export function extractClientName(text: string): string | undefined {
       return raw;
     }
   }
+    // Padrão 4: Nome no final da mensagem após ponto, quebra de linha ou vírgula (ex: "... axila e virilha. Amanda" ou "virilha, Amanda")
+  const trailingNameMatch = text.match(/(?:[.\n,]\s*|\b(?:para|cliente|nome)\s+)([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,2})\s*$/);
+  if (trailingNameMatch && trailingNameMatch[1]) {
+    const candidate = trailingNameMatch[1].trim();
+    const invalidWords = /^(hoje|amanha|amanhã|ontem|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|depilacao|depilação|cilios|cílios|sobrancelha|tufinho|axila|virilha|buco|buço|rosto|perna|henna|agendar|marcar|confirmar)$/i;
+    if (candidate.length >= 2 && !invalidWords.test(candidate)) {
+      return candidate;
+    }
+  }
+
   return undefined;
 }
 
