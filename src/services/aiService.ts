@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, FunctionDeclaration } from '@google/generative-ai';
-import { SYSTEM_PROMPT } from '../prompts/systemPrompt';
+import { SYSTEM_PROMPT, getSystemPrompt } from '../prompts/systemPrompt';
 import { SALON_CONFIG } from '../config/salonConfig';
 import { CalendarService } from './calendarService';
 import { AppointmentService, inferAppointmentDurationMinutes } from './appointmentService';
@@ -152,7 +152,7 @@ export class AIService {
     }
 
     const nowIso = DateTime.now().setZone(SALON_CONFIG.timezone).toFormat('yyyy-MM-dd HH:mm (EEEE)');
-    const fullSystemInstruction = `${SYSTEM_PROMPT}\n\n[CONTEXTO DE SISTEMA TEMPO REAL]\nData e Hora Atual: ${nowIso}\nTimezone: ${SALON_CONFIG.timezone}\nTelefone da Cliente em Atendimento: ${params.clientPhone}`;
+    const fullSystemInstruction = `${typeof getSystemPrompt === "function" ? getSystemPrompt() : SYSTEM_PROMPT}\n\n[CONTEXTO DE SISTEMA TEMPO REAL]\nData e Hora Atual: ${nowIso}\nTimezone: ${SALON_CONFIG.timezone}\nTelefone da Cliente em Atendimento: ${params.clientPhone}`;
 
     if (!this.hasRealApiKey()) {
       const mockResult = await this.handleMockAIResponse(params.messageText, params.clientPhone, historyLength, params.whatsappClient);

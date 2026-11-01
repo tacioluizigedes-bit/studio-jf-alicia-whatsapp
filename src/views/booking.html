@@ -122,25 +122,8 @@
       </div>
 
       <!-- Abas de Categoria -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-[#1e293b] rounded-2xl border border-slate-800" role="tablist">
-        <button
-          id="tab-cilios"
-          type="button"
-          onclick="BookingController.setCategory('cilios')"
-          class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/25"
-        >
-          <span>👁️</span>
-          <span>Extensão de Cílios</span>
-        </button>
-        <button
-          id="tab-sobrancelhas"
-          type="button"
-          onclick="BookingController.setCategory('sobrancelhas')"
-          class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white"
-        >
-          <span>✨</span>
-          <span>Sobrancelhas & Manutenção</span>
-        </button>
+      <div id="categoryTabsContainer" class="flex flex-wrap gap-2 p-1 bg-[#1e293b] rounded-2xl border border-slate-800" role="tablist">
+        <!-- Injetado dinamicamente via JS conforme serviços cadastrados -->
       </div>
 
       <!-- Lista de Cards de Serviço -->
@@ -409,8 +392,8 @@
     const BookingController = (() => {
       const STUDIO_WHATSAPP = '5521960003154';
 
-      // Catálogo de Serviços com durações e preços oficiais solicitados
-      const SERVICES = [
+      // Catálogo de Serviços com carregamento dinâmico e fallback
+      let SERVICES = [
         // Categoria: Cílios
         {
           id: 'tufinhos_seda',
@@ -552,8 +535,29 @@
         };
       }
 
+      async function loadDynamicCatalog() {
+        try {
+          const res = await fetch('/api/availability/services');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.services) && data.services.length > 0) {
+              SERVICES = data.services;
+              if (data.whatsappNumber) {
+                // Sincroniza número oficial do studio
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Usando catálogo local de serviços como fallback:', err);
+        }
+      }
+
       // Inicialização na abertura da página
-      function init() {
+      async function init() {
+        await loadDynamicCatalog();
+        if (!state.selectedService && SERVICES.length > 0) {
+          state.selectedService = SERVICES.find(s => s.category === state.activeCategory) || SERVICES[0];
+        }
         const todayIso = getTodayLocalIso();
         const todayParts = parseIsoParts(todayIso);
 
@@ -597,14 +601,48 @@
         renderServices();
       }
 
-      function renderCategoryTabs() {
-        const tabCilios = document.getElementById('tab-cilios');
-        const tabSobrancelhas = document.getElementById('tab-sobrancelhas');
-        const activeClasses = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/25';
-        const inactiveClasses = 'py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white';
+      const CATEGORY_META = {
+        cilios: { icon: '👁️', label: 'Extensão de Cílios' },
+        sobrancelhas: { icon: '✨', label: 'Sobrancelhas & Manutenção' },
+        depilacao: { icon: '🍯', label: 'Depilação a Cera' },
+        combos: { icon: '🎁', label: 'Combos Especiais' },
+        outros: { icon: '🌸', label: 'Outros Procedimentos' }
+      };
 
-        tabCilios.className = state.activeCategory === 'cilios' ? activeClasses : inactiveClasses;
-        tabSobrancelhas.className = state.activeCategory === 'sobrancelhas' ? activeClasses : inactiveClasses;
+      function renderCategoryTabs() {
+        const container = document.getElementById('categoryTabsContainer');
+        if (!container) return;
+
+        // Categorias únicas presentes nos serviços atuais
+        const presentCats = [];
+        SERVICES.forEach(s => {
+          const c = s.category || 'outros';
+          if (!presentCats.includes(c)) presentCats.push(c);
+        });
+
+        if (presentCats.length === 0) presentCats.push('cilios', 'sobrancelhas');
+
+        if (!presentCats.includes(state.activeCategory)) {
+          state.activeCategory = presentCats[0];
+        }
+
+        const activeClasses = 'flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white shadow-md shadow-pink-600/25';
+        const inactiveClasses = 'flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/50';
+
+        container.innerHTML = presentCats.map(catKey => {
+          const meta = CATEGORY_META[catKey] || { icon: '✨', label: catKey };
+          const isActive = state.activeCategory === catKey;
+          return `
+            <button
+              type="button"
+              onclick="BookingController.setCategory('${catKey}')"
+              class="${isActive ? activeClasses : inactiveClasses}"
+            >
+              <span>${meta.icon}</span>
+              <span>${meta.label}</span>
+            </button>
+          `;
+        }).join('');
       }
 
       // Renderiza cards de serviço da categoria ativa
@@ -619,6 +657,26 @@
 
         grid.innerHTML = filtered.map((srv) => {
           const isSelected = state.selectedService && state.selectedService.id === srv.id;
+          const isPromo = !!srv.isPromotional || (srv.originalPrice && srv.originalPrice > srv.price);
+
+          let priceContent = `<span class="font-extrabold text-amber-400">${srv.priceDisplay}</span>`;
+          if (isPromo) {
+            const origStr = srv.originalPriceDisplay || ('R$ ' + Number(srv.originalPrice).toFixed(2).replace('.', ','));
+            priceContent = `
+              <div class="flex flex-col items-end">
+                <span class="text-[10px] text-slate-400 line-through">${origStr}</span>
+                <span class="font-extrabold text-emerald-400 text-sm">${srv.priceDisplay}</span>
+              </div>
+            `;
+          }
+
+          let badgeContent = '';
+          if (isPromo) {
+            badgeContent = `<span class="inline-flex items-center gap-1 mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-rose-300 border border-red-500/30 animate-pulse">🔥 Promoção</span>`;
+          } else if (srv.badge) {
+            badgeContent = `<span class="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-slate-800 text-slate-400'}">${srv.badge}</span>`;
+          }
+
           return `
             <button
               type="button"
@@ -634,7 +692,7 @@
                   <span class="text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-200'} block">
                     ${srv.name}
                   </span>
-                  ${srv.badge ? `<span class="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${isSelected ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-slate-800 text-slate-400'}">${srv.badge}</span>` : ''}
+                  ${badgeContent}
                 </div>
                 <div class="w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
                   isSelected ? 'border-pink-500 bg-pink-500 text-white' : 'border-slate-600'
@@ -645,7 +703,7 @@
 
               <div class="flex items-center justify-between w-full pt-2 border-t border-slate-800/80 text-xs">
                 <span class="text-slate-400 font-medium">⏱️ ${srv.durationLabel}</span>
-                <span class="font-extrabold text-amber-400">${srv.priceDisplay}</span>
+                ${priceContent}
               </div>
             </button>
           `;

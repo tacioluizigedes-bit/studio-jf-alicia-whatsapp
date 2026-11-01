@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import { prisma } from '../lib/prisma';
 import { SALON_CONFIG } from '../config/salonConfig';
 import { isBiweeklyTuesdayBlocked, inferAppointmentDurationMinutes } from '../services/appointmentService';
+import { serviceCatalogService } from '../services/serviceCatalogService';
 
 export const availabilityRouter = Router();
 
@@ -149,6 +150,14 @@ function resolveServiceDuration(serviceId?: string): { durationMinutes: number; 
     return {
       durationMinutes: publicFound.durationMinutes,
       serviceName: publicFound.name.replace('deExtensão', 'de Extensão'),
+    };
+  }
+
+  const dynamicFound = serviceCatalogService.findService(serviceId);
+  if (dynamicFound) {
+    return {
+      durationMinutes: dynamicFound.durationMinutes || inferAppointmentDurationMinutes(dynamicFound.name),
+      serviceName: dynamicFound.name,
     };
   }
 
@@ -366,9 +375,10 @@ availabilityRouter.get('/', async (req: Request, res: Response) => {
  * Retorna o catálogo público de procedimentos para popular o frontend dinamicamente
  */
 availabilityRouter.get('/services', (_req: Request, res: Response) => {
+  const dynamicServices = serviceCatalogService.getPublicBookingServices();
   res.json({
     success: true,
     whatsappNumber: SALON_CONFIG.officialNumber || '5521960003154',
-    services: PUBLIC_BOOKING_SERVICES,
+    services: dynamicServices && dynamicServices.length > 0 ? dynamicServices : PUBLIC_BOOKING_SERVICES,
   });
 });

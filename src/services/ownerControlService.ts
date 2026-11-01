@@ -15,6 +15,7 @@ import { sendHumanizedMessage, WhatsAppClientLike } from '../utils/whatsappHelpe
 import { isBiweeklyTuesdayBlocked, sanitizeToE164, inferAppointmentDurationMinutes, formatDurationLabel } from './appointmentService';
 import { OwnerAgendaSetupService } from './ownerAgendaSetupService';
 import { extractBookingEntities, extractService, extractTime, extractClientName } from './nlpEntityExtractor';
+import { serviceCatalogService } from './serviceCatalogService';
 
 const ownerAgendaSetupService = new OwnerAgendaSetupService();
 
@@ -433,6 +434,30 @@ export async function handleOwnerCommands(
     return { status: 'success', action: 'forward_payment_link', reply, message: reply, response: reply };
   }
 
+  // COMANDO 0.6: Alteração de Preços / Valores
+  if (isOwnerPriceChangeIntent(cleanText)) {
+    const reply = await handleOwnerPriceChange(whatsappClient, ownerPhone, cleanText);
+    return { status: 'success', action: 'update_service_price', reply, message: reply, response: reply };
+  }
+
+  // COMANDO 0.7: Promoções e Descontos
+  if (isOwnerPromoIntent(cleanText)) {
+    const reply = await handleOwnerPromotion(whatsappClient, ownerPhone, cleanText);
+    return { status: 'success', action: 'service_promotion', reply, message: reply, response: reply };
+  }
+
+  // COMANDO 0.8: Adicionar / Cadastrar Novo Serviço
+  if (isOwnerAddServiceIntent(cleanText)) {
+    const reply = await handleOwnerAddService(whatsappClient, ownerPhone, cleanText);
+    return { status: 'success', action: 'add_custom_service', reply, message: reply, response: reply };
+  }
+
+  // COMANDO 0.9: Listar Promoções / Tabela de Preços
+  if (isOwnerListCatalogIntent(cleanText)) {
+    const reply = await handleOwnerListCatalog(whatsappClient, ownerPhone, cleanText);
+    return { status: 'success', action: 'list_catalog', reply, message: reply, response: reply };
+  }
+
   // COMANDO 1: Montagem / Abertura de Grade Mensal (Prioridade Alta para Fluxo Administrativo)
   if (ownerAgendaSetupService.isAdminIntent(cleanText) || ownerAgendaSetupService.isPhoneInAdminFlow(ownerPhone)) {
     const flowRes = await ownerAgendaSetupService.processAdminMessage(ownerPhone, cleanText);
@@ -509,6 +534,9 @@ export async function handleOwnerCommands(
     `Aqui você tem o controle total do studio e atendo qualquer solicitação sua de forma direta:\n\n` +
     `📌 *Marcar Cliente:* "Marcar uma cliente amanhã às 14h. Manutenção de cílios. Nome: Renata"\n` +
     `📋 *Consultar:* "Minha agenda", "O que temos pra amanhã?", ou "Agenda de quarta"\n` +
+    `🏷️ *Alterar Preço:* "Alterar valor Volume Brasileiro para 90"\n` +
+    `🎉 *Promoção:* "Promoção Volume Brasileiro por 80" ou "Tirar promoção..."\n` +
+    `➕ *Novo Serviço:* "Adicionar serviço Lash Lifting, valor 110, duração 60 min"\n` +
     `🔒 *Bloquear Vaga:* "Bloquear [data] das [início] às [fim]" (ex: "Bloquear 20/10 das 14:00 às 16:00")\n` +
     `🔓 *Liberar Horário:* "Liberar horário de amanhã às 14h"\n` +
     `❌ *Desmarcar:* "Desmarcar cliente [Nome]"\n` +
@@ -1689,4 +1717,280 @@ export async function reportAvailableSlotsToOwner(
     await sendHumanizedMessage(whatsappClient, ownerPhone, fullMsg, 4000);
   }
   return fullMsg;
+}
+
+/**
+ * ============================================================================
+ * GESTÃO EXECUTIVA DE CATÁLOGO, PREÇOS E PROMOÇÕES (JANAÍNA)
+ * ============================================================================
+ */
+
+export function isOwnerPriceChangeIntent(cleanText: string): boolean {
+  const norm = normalizeText(cleanText);
+  if (/promo/i.test(norm)) return false;
+  if (/adicionar|cadastrar|novo/i.test(norm)) return false;
+  return (
+    /(?:alterar|mudar|atualizar|trocar)\s+(?:o\s+)?(?:valor|pre[çc]o)\s*(?:d[oe]\s+|para\s+)?/i.test(norm) ||
+    /(?:valor|pre[çc]o)\s+(?:d[oe]\s+)?(.+?)\s+(?:para|por)\s*(?:r\$\s*)?\d+/i.test(norm)
+  );
+}
+
+export function isOwnerPromoIntent(cleanText: string): boolean {
+  const norm = normalizeText(cleanText);
+  return (
+    /(?:tirar|encerrar|remover|cancelar|finalizar)\s+(?:a\s+)?promo[çc][aã]o/i.test(norm) ||
+    /(?:promo[çc][aã]o|desconto)\s*(?:n[oe]\s+|d[oe]\s+)?(.+?)\s*(?:de\s+(?:r\$\s*)?\d+(?:[.,]\d{1,2})?\s+)?(?:por|para)\s*(?:r\$\s*)?\d+/i.test(norm) ||
+    /(?:colocar|ativar)\s+(?:em\s+)?promo[çc][aã]o/i.test(norm) ||
+    norm.startsWith('promocao ') ||
+    norm.startsWith('promocao:')
+  );
+}
+
+export function isOwnerAddServiceIntent(cleanText: string): boolean {
+  const norm = normalizeText(cleanText);
+  return /(?:adicionar|cadastrar|novo)\s+servi[çc]o/i.test(norm);
+}
+
+export function isOwnerListCatalogIntent(cleanText: string): boolean {
+  const norm = normalizeText(cleanText);
+  return (
+    /(?:ver|listar|quais|consultar)\s+(?:as\s+)?promo[çc][oõ]es/i.test(norm) ||
+    /(?:ver|listar|consultar)\s+(?:a\s+)?(?:tabela\s+de\s+pre[çc]os|servi[çc]os|pre[çc]os)/i.test(norm) ||
+    norm === 'promocoes' ||
+    norm === 'promocao' ||
+    norm === 'precos' ||
+    norm === 'servicos'
+  );
+}
+
+export async function handleOwnerPriceChange(
+  whatsappClient: WhatsAppClientLike | null,
+  ownerPhone: string,
+  rawText: string
+): Promise<string> {
+  let match = rawText.match(/(?:alterar|mudar|atualizar|trocar)\s+(?:o\s+)?(?:valor|pre[çc]o)\s*(?:d[oe]\s+)?(.+?)\s+(?:para|por)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  if (!match) {
+    match = rawText.match(/(?:valor|pre[çc]o)\s*(?:d[oe]\s+)?(.+?)\s+(?:para|por)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  }
+
+  if (!match) {
+    const errorMsg = `Não entendi o valor ou procedimento, Jana! ✨\n\nVocê pode me mandar assim:\n*"Alterar valor do Volume Brasileiro para 90"*\nou\n*"Mudar preço Design de Sobrancelha para 30"* 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, errorMsg, 3000);
+    return errorMsg;
+  }
+
+  const serviceQuery = match[1].trim();
+  const newPrice = parseFloat(match[2].replace(',', '.'));
+
+  const result = serviceCatalogService.updateServicePrice(serviceQuery, newPrice, false);
+
+  if (!result.success || !result.service) {
+    const notFoundMsg = `⚠️ *Procedimento não encontrado, Jana!*\n\nProcurei por "*${serviceQuery}*", mas não achei na tabela atual.\nSe quiser cadastrar como um novo procedimento, é só me mandar:\n*"Adicionar serviço ${serviceQuery}, valor ${newPrice}, duração 60 min"* 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, notFoundMsg, 3000);
+    return notFoundMsg;
+  }
+
+  const successMsg =
+    `✨ *Valor Atualizado com Sucesso, Jana!* 💅\n\n` +
+    `O procedimento *${result.service.name}* teve seu valor alterado:\n` +
+    `💰 *Novo valor oficial:* R$ ${Number(result.service.price).toFixed(2).replace('.', ',')}\n\n` +
+    `Já sincronizei na minha inteligência de atendimento e no painel online (/agendar) para as clientes! 💕`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, ownerPhone, successMsg, 3000);
+  }
+  return successMsg;
+}
+
+export async function handleOwnerPromotion(
+  whatsappClient: WhatsAppClientLike | null,
+  ownerPhone: string,
+  rawText: string
+): Promise<string> {
+  // 1. Encerrar promoção
+  const removeMatch = rawText.match(/(?:tirar|encerrar|remover|cancelar|finalizar)\s+(?:a\s+)?promo[çc][aã]o\s*(?:d[oe]\s+)?(.+)/i);
+  if (removeMatch) {
+    const serviceQuery = removeMatch[1].trim();
+    const result = serviceCatalogService.removePromotion(serviceQuery);
+    if (!result.success || !result.service) {
+      const notFoundMsg = `⚠️ Não encontrei o procedimento "*${serviceQuery}*" para remover a promoção, Jana! Verifique o nome e tente novamente. 💕`;
+      if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, notFoundMsg, 3000);
+      return notFoundMsg;
+    }
+
+    const cancelMsg =
+      `✨ *Promoção Encerrada com Sucesso, Jana!* 🌸\n\n` +
+      `O procedimento *${result.service.name}* voltou ao seu valor regular:\n` +
+      `💰 *Valor normal:* R$ ${Number(result.service.price).toFixed(2).replace('.', ',')}\n\n` +
+      `Já retirei a oferta do painel online (/agendar) e minhas respostas para as clientes já foram normalizadas! 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, cancelMsg, 3000);
+    return cancelMsg;
+  }
+
+  // 2. Ativar promoção
+  let promoMatch = rawText.match(/(?:promo[çc][aã]o|desconto)\s*(?:n[oe]\s+|d[oe]\s+)?(.+?)\s*(?:de\s+(?:r\$\s*)?\d+(?:[.,]\d{1,2})?\s+)?(?:por|para)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  if (!promoMatch) {
+    promoMatch = rawText.match(/(?:colocar\s+em\s+promo[çc][aã]o|ativar\s+promo[çc][aã]o)\s*(?:d[oe]\s+)?(.+?)\s+(?:por|para)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  }
+  if (!promoMatch) {
+    promoMatch = rawText.match(/promo[çc][aã]o:?\s*(.+?)\s+(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)$/i);
+  }
+
+  if (!promoMatch) {
+    const helpPromo =
+      `Para ativar uma promoção, você pode me mandar assim, Jana:\n` +
+      `*"Promoção Volume Brasileiro por 80"*\n` +
+      `ou\n` +
+      `*"Promoção Design de Sobrancelha de 25 por 20"*\n\n` +
+      `E para encerrar:\n` +
+      `*"Tirar promoção do Volume Brasileiro"* 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, helpPromo, 3000);
+    return helpPromo;
+  }
+
+  const serviceQuery = promoMatch[1].trim();
+  const promoPrice = parseFloat(promoMatch[2].replace(',', '.'));
+
+  const result = serviceCatalogService.updateServicePrice(serviceQuery, promoPrice, true);
+
+  if (!result.success || !result.service) {
+    const notFoundMsg = `⚠️ *Procedimento não encontrado, Jana!*\n\nNão encontrei nenhum serviço com o nome "*${serviceQuery}*".\nVerifique o nome cadastrado e tente novamente! 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, notFoundMsg, 3000);
+    return notFoundMsg;
+  }
+
+  const origStr = result.service.originalPrice ? `R$ ${Number(result.service.originalPrice).toFixed(2).replace('.', ',')}` : '';
+  const promoStr = `R$ ${Number(result.service.price).toFixed(2).replace('.', ',')}`;
+
+  const successMsg =
+    `🎉 *Promoção Ativada com Sucesso, Jana!* ✨\n\n` +
+    `O procedimento *${result.service.name}* entrou em oferta especial:\n` +
+    (origStr ? `🔥 De: ~${origStr}~\n` : '') +
+    `🏷️ *Por apenas: ${promoStr}*\n\n` +
+    `Já destaquei a promoção no painel online (/agendar) para as clientes e vou oferecer com carinho esse desconto aqui no WhatsApp! 💖`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, ownerPhone, successMsg, 3000);
+  }
+  return successMsg;
+}
+
+export async function handleOwnerAddService(
+  whatsappClient: WhatsAppClientLike | null,
+  ownerPhone: string,
+  rawText: string
+): Promise<string> {
+  const bodyText = rawText.replace(/^(?:adicionar|cadastrar|novo)\s+servi[çc]o\s*:?\s*/i, '').trim();
+
+  const priceMatch = bodyText.match(/(?:valor|pre[çc]o|custo|por)\s*(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  let durationMinutes = 60;
+  const durationMatch = bodyText.match(/(?:dura[çc][aã]o|tempo)\s*(\d+)h\s*(\d+)?/i);
+  if (durationMatch) {
+    const h = parseInt(durationMatch[1], 10);
+    const m = durationMatch[2] ? parseInt(durationMatch[2], 10) : 0;
+    durationMinutes = h * 60 + m;
+  } else {
+    const minMatch = bodyText.match(/(?:dura[çc][aã]o|tempo)\s*(\d+)\s*(?:min|m)?/i);
+    if (minMatch) {
+      durationMinutes = parseInt(minMatch[1], 10);
+    }
+  }
+
+  let serviceName = bodyText;
+  const delimiterMatch = bodyText.match(/^(.+?)(?:,|\s+(?:valor|pre[çc]o|custo|dura[çc][aã]o|tempo))/i);
+  if (delimiterMatch) {
+    serviceName = delimiterMatch[1].trim();
+  }
+
+  if (!priceMatch) {
+    const helpMsg =
+      `Jana, para adicionar um novo procedimento preciso do nome e do valor! ✨\n\n` +
+      `Exemplo de envio:\n` +
+      `*"Adicionar serviço Lash Lifting, valor 110, duração 60 min"*\nou\n` +
+      `*"Cadastrar serviço Brow Lamination, valor 90, tempo 45"* 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, helpMsg, 3000);
+    return helpMsg;
+  }
+
+  const price = parseFloat(priceMatch[1].replace(',', '.'));
+
+  const result = serviceCatalogService.addCustomService({
+    name: serviceName,
+    price,
+    durationMinutes,
+  });
+
+  if (!result.success || !result.service) {
+    const errorMsg = `⚠️ ${result.message || 'Não consegui adicionar o procedimento, Jana.'}`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, errorMsg, 3000);
+    return errorMsg;
+  }
+
+  const successMsg =
+    `✨ *Novo Procedimento Cadastrado com Sucesso, Jana!* 🌸\n\n` +
+    `📌 *Procedimento:* ${result.service.name}\n` +
+    `💰 *Valor:* R$ ${Number(result.service.price).toFixed(2).replace('.', ',')}\n` +
+    `⏱️ *Duração:* ${formatDurationLabel(result.service.durationMinutes)} (${result.service.durationMinutes} min)\n` +
+    `📂 *Categoria:* ${result.service.category}\n\n` +
+    `O procedimento já está disponível imediatamente para as clientes agendarem no painel online (/agendar) e pelo WhatsApp! 💕`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, ownerPhone, successMsg, 3000);
+  }
+  return successMsg;
+}
+
+export async function handleOwnerListCatalog(
+  whatsappClient: WhatsAppClientLike | null,
+  ownerPhone: string,
+  rawText: string
+): Promise<string> {
+  const norm = normalizeText(rawText);
+
+  if (/promo/i.test(norm)) {
+    const promos = serviceCatalogService.getActivePromotions();
+    if (promos.length === 0) {
+      const msg = `Jana, no momento não temos nenhuma promoção ativa no catálogo! ✨\n\nPara colocar um procedimento em promoção, basta me enviar:\n*"Promoção [Nome do Procedimento] por R$ [Valor]"* 💕`;
+      if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, msg, 3000);
+      return msg;
+    }
+
+    let msg = `🔥 *Promoções Ativas no Studio JF:* ✨\n\n`;
+    for (const p of promos) {
+      const orig = p.originalPrice ? `~R$ ${Number(p.originalPrice).toFixed(2).replace('.', ',')}~ ` : '';
+      msg += `• *${p.name}*: ${orig}*R$ ${Number(p.price).toFixed(2).replace('.', ',')}*\n`;
+    }
+    msg += `\nPara alterar ou encerrar, basta me enviar: *"Tirar promoção [Procedimento]"*! 💕`;
+    if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, msg, 3000);
+    return msg;
+  }
+
+  const services = serviceCatalogService.getAllServices();
+  let msg = `📋 *Tabela de Procedimentos e Valores - Studio JF:* ✨\n\n`;
+  const lashes = services.filter(s => s.category.includes('cilios'));
+  const brows = services.filter(s => s.category.includes('sobrancelha'));
+
+  if (lashes.length > 0) {
+    msg += `👁️ *Cílios:*\n`;
+    for (const s of lashes.slice(0, 8)) {
+      const promoBadge = s.isPromotional ? ' 🔥 [PROMO]' : '';
+      msg += `• ${s.name}: R$ ${Number(s.price).toFixed(2).replace('.', ',')}${promoBadge}\n`;
+    }
+    msg += `\n`;
+  }
+
+  if (brows.length > 0) {
+    msg += `✨ *Sobrancelhas:*\n`;
+    for (const s of brows.slice(0, 5)) {
+      const promoBadge = s.isPromotional ? ' 🔥 [PROMO]' : '';
+      msg += `• ${s.name}: R$ ${Number(s.price).toFixed(2).replace('.', ',')}${promoBadge}\n`;
+    }
+    msg += `\n`;
+  }
+
+  msg += `_Para alterar qualquer valor: "Alterar valor [procedimento] para [preço]"_\n`;
+  msg += `_Para criar promoção: "Promoção [procedimento] por [preço]"_ 💕`;
+
+  if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, msg, 4000);
+  return msg;
 }

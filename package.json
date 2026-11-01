@@ -8,7 +8,7 @@
     "start": "node dist/index.js",
     "start:prod": "node scripts/start-cloud.js",
     "dev": "tsx watch src/index.ts",
-    "test": "npm run build && node --test test/studio_full_suite.test.js"
+    "test": "npm run build && node --test test/studio_full_suite.test.js test/catalog_promotions.test.js"
   },
   "engines": {
     "node": ">=20.0.0"
