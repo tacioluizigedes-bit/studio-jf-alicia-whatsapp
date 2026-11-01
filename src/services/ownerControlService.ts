@@ -134,11 +134,18 @@ export function parseDateFromQuery(rawText: string, referenceDate?: DateTime): P
     }
   }
 
-  // 6. "dia DD" (ex: "dia 14", "dia 20")
+  // 6. "dia DD" (ex: "dia 14", "dia 20", "dia 03")
   const dayMatch = norm.match(/\bdia\s+(\d{1,2})\b/);
   if (dayMatch) {
     const day = parseInt(dayMatch[1], 10);
-    const dt = DateTime.fromObject({ year: now.year, month: now.month, day }, { zone: tz });
+    let dt = DateTime.fromObject({ year: now.year, month: now.month, day }, { zone: tz });
+    if (dt.isValid && dt < now.startOf('day')) {
+      const nextMonth = now.plus({ months: 1 });
+      const nextDt = DateTime.fromObject({ year: nextMonth.year, month: nextMonth.month, day }, { zone: tz });
+      if (nextDt.isValid) {
+        dt = nextDt;
+      }
+    }
     if (dt.isValid) {
       return {
         targetDate: dt.toJSDate(),
@@ -630,9 +637,14 @@ export async function reportDailyAgenda(
 
   for (const apt of appointments) {
     const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
+    let displayClientName = (apt.clientName || '').replace(/\s+(?:às|as|para|no|na)$/i, '').trim();
+    if (!displayClientName || /^cliente(\s*\(.*\))?$/i.test(displayClientName)) {
+      const nameNoteMatch = (apt.notes || '').match(/cliente:\s*([^|;,\n\]]+)/i);
+      if (nameNoteMatch) displayClientName = nameNoteMatch[1].trim();
+    }
     let displayService = apt.service;
     if (/studio\s*jf|procedimento\s*studio/i.test(displayService)) {
-      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n\]]+)/i);
       displayService = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
     }
     const aptDuration = inferAppointmentDurationMinutes(displayService);
@@ -653,7 +665,7 @@ export async function reportDailyAgenda(
 
     eventsList.push({
       time: aptDt.toFormat('HH:mm'),
-      text: `• *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${apt.clientName} (${displayService}) ${statusLabel}`,
+      text: `• *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${displayClientName} (${displayService}) ${statusLabel}`,
       sortDt: aptDt,
       isBlock: false,
     });
@@ -783,9 +795,14 @@ export async function reportUpcomingAgenda(
 
   for (const apt of allAppointments) {
     const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
+    let displayClientName = (apt.clientName || '').replace(/\s+(?:às|as|para|no|na)$/i, '').trim();
+    if (!displayClientName || /^cliente(\s*\(.*\))?$/i.test(displayClientName)) {
+      const nameNoteMatch = (apt.notes || '').match(/cliente:\s*([^|;,\n\]]+)/i);
+      if (nameNoteMatch) displayClientName = nameNoteMatch[1].trim();
+    }
     let displayService = apt.service;
     if (/studio\s*jf|procedimento\s*studio/i.test(displayService)) {
-      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n\]]+)/i);
       displayService = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
     }
     const aptDuration = inferAppointmentDurationMinutes(displayService);
@@ -805,7 +822,7 @@ export async function reportUpcomingAgenda(
       badge = '🧾 [Comprovante Enviado]';
     }
 
-    const line = `  • *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${apt.clientName} | ${apt.service} (R$ ${Number(apt.totalAmount).toFixed(0)}) ${badge}`;
+    const line = `  • *${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}* (${durLabel}) - ${displayClientName} | ${displayService} (R$ ${Number(apt.totalAmount).toFixed(0)}) ${badge}`;
 
     if (!groupedByDay.has(dayKey)) {
       groupedByDay.set(dayKey, { header, items: [] });
@@ -1397,10 +1414,15 @@ export async function handleOwnerDirectBooking(
     },
   });
 
+  const isComboBooking = Boolean(extractedSrv.subServices && extractedSrv.subServices.length > 1);
+  const procedureDisplayLine = isComboBooking
+    ? `💅 *Procedimento:* ${serviceName}\n`
+    : `💅 *Procedimento:* ${serviceName} (${durationLabel} - R$ ${totalAmount.toFixed(2).replace('.', ',')})\n`;
+
   const directBookedMsg =
     `✅ *Agendamento Realizado com Sucesso, Jana!* ✨\n\n` +
     `👤 *Cliente:* ${clientName}\n` +
-    `💅 *Procedimento:* ${serviceName}\n` +
+    procedureDisplayLine +
     comboBreakdownText +
     `🗓️ *Data e Horário:* ${formattedDateTime}\n` +
     `⏭️ *Próximo horário livre após ela:* ${endDt.toFormat('HH:mm')}\n\n` +
@@ -1754,12 +1776,16 @@ export function isOwnerAddServiceIntent(cleanText: string): boolean {
 export function isOwnerListCatalogIntent(cleanText: string): boolean {
   const norm = normalizeText(cleanText);
   return (
-    /(?:ver|listar|quais|consultar)\s+(?:as\s+)?promo[çc][oõ]es/i.test(norm) ||
-    /(?:ver|listar|consultar)\s+(?:a\s+)?(?:tabela\s+de\s+pre[çc]os|servi[çc]os|pre[çc]os)/i.test(norm) ||
+    /(?:ver|listar|quais|consultar|mostrar)\s+(?:as\s+)?promo[çc][oõ]es/i.test(norm) ||
+    /(?:ver|listar|consultar|mostrar)\s+(?:a\s+|os\s+)?(?:tabela|valores|pre[çc]os|servi[çc]os|procedimentos|catalogo)/i.test(norm) ||
+    /\btabela\s+de\s+(?:valores|pre[çc]os|servi[çc]os|procedimentos)\b/i.test(norm) ||
+    /\b(?:valores|pre[çc]os)\s+d[eao]s?\s+(?:cilios|sobrancelhas?|depila[çc][aã]o|epila[çc][aã]o|limpeza|procedimentos|servi[çc]os)\b/i.test(norm) ||
     norm === 'promocoes' ||
     norm === 'promocao' ||
     norm === 'precos' ||
-    norm === 'servicos'
+    norm === 'valores' ||
+    norm === 'servicos' ||
+    norm === 'tabela'
   );
 }
 
@@ -1966,30 +1992,49 @@ export async function handleOwnerListCatalog(
   }
 
   const services = serviceCatalogService.getAllServices();
+  const filterLashesOnly = /\bcilios\b/i.test(norm) && !/\bsobrancelh/i.test(norm) && !/\b(?:depila|epila)/i.test(norm);
+  const filterBrowsOnly = /\bsobrancelh/i.test(norm) && !/\bcilios\b/i.test(norm) && !/\b(?:depila|epila)/i.test(norm);
+  const filterWaxOnly = /\b(?:depila|epila|limpeza)/i.test(norm) && !/\bcilios\b/i.test(norm) && !/\bsobrancelh/i.test(norm);
+
   let msg = `📋 *Tabela de Procedimentos e Valores - Studio JF:* ✨\n\n`;
   const lashes = services.filter(s => s.category.includes('cilios'));
   const brows = services.filter(s => s.category.includes('sobrancelha'));
+  const waxAndSkin = services.filter(s => !s.category.includes('cilios') && !s.category.includes('sobrancelha'));
 
-  if (lashes.length > 0) {
-    msg += `👁️ *Cílios:*\n`;
-    for (const s of lashes.slice(0, 8)) {
+  if (lashes.length > 0 && (!filterBrowsOnly && !filterWaxOnly)) {
+    msg += `👁️ *Cílios (Colocação & Manutenção):*\n`;
+    const listToRender = filterLashesOnly ? lashes : lashes.slice(0, 12);
+    for (const s of listToRender) {
       const promoBadge = s.isPromotional ? ' 🔥 [PROMO]' : '';
-      msg += `• ${s.name}: R$ ${Number(s.price).toFixed(2).replace('.', ',')}${promoBadge}\n`;
+      const durStr = formatDurationLabel(s.durationMinutes);
+      msg += `• ${s.name} (${durStr}): *R$ ${Number(s.price).toFixed(2).replace('.', ',')}*${promoBadge}\n`;
     }
     msg += `\n`;
   }
 
-  if (brows.length > 0) {
+  if (brows.length > 0 && (!filterLashesOnly && !filterWaxOnly)) {
     msg += `✨ *Sobrancelhas:*\n`;
-    for (const s of brows.slice(0, 5)) {
+    for (const s of brows) {
       const promoBadge = s.isPromotional ? ' 🔥 [PROMO]' : '';
-      msg += `• ${s.name}: R$ ${Number(s.price).toFixed(2).replace('.', ',')}${promoBadge}\n`;
+      const durStr = formatDurationLabel(s.durationMinutes);
+      msg += `• ${s.name} (${durStr}): *R$ ${Number(s.price).toFixed(2).replace('.', ',')}*${promoBadge}\n`;
     }
     msg += `\n`;
   }
 
-  msg += `_Para alterar qualquer valor: "Alterar valor [procedimento] para [preço]"_\n`;
-  msg += `_Para criar promoção: "Promoção [procedimento] por [preço]"_ 💕`;
+  if (waxAndSkin.length > 0 && (filterWaxOnly || (!filterLashesOnly && !filterBrowsOnly))) {
+    msg += `🌸 *Depilação & Estética Facial:*\n`;
+    const listToRender = filterWaxOnly ? waxAndSkin : waxAndSkin.slice(0, 8);
+    for (const s of listToRender) {
+      const promoBadge = s.isPromotional ? ' 🔥 [PROMO]' : '';
+      const durStr = formatDurationLabel(s.durationMinutes);
+      msg += `• ${s.name} (${durStr}): *R$ ${Number(s.price).toFixed(2).replace('.', ',')}*${promoBadge}\n`;
+    }
+    msg += `\n`;
+  }
+
+  msg += `_Para alterar qualquer valor ou tempo, acesse a aba "💅 Procedimentos, Tempos & Valores" no Dashboard ou me envie:_\n`;
+  msg += `_"Alterar valor [procedimento] para [preço]"_ 💕`;
 
   if (whatsappClient) await sendHumanizedMessage(whatsappClient, ownerPhone, msg, 4000);
   return msg;

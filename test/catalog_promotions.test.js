@@ -162,4 +162,27 @@ describe('--- GESTÃO DE CATÁLOGO, PREÇOS E PROMOÇÕES PELA JANAÍNA ---', ()
     assert.strictEqual(serviceCatalogService.findService(addRes.service.id), undefined);
   });
 
+  it('7. Deve extrair corretamente o nome da cliente e o procedimento mesmo com hífens, pontos ou datas no meio ("Marcar cliente dia 03 às 14hs - Fernanda limpeza de pele")', async () => {
+    const { extractClientName, extractService } = require('../dist/services/nlpEntityExtractor');
+
+    const msg1 = 'Marcar cliente dia 03 às 14hs - Fernanda limpeza de pele';
+    assert.strictEqual(extractClientName(msg1), 'Fernanda');
+    const srv1 = extractService(msg1);
+    assert.ok(srv1);
+    assert.strictEqual(srv1.name, 'Limpeza de Pele Profunda');
+    assert.strictEqual(srv1.price, 120);
+
+    const msg2 = 'Agendar uma cliente às 14hs hoje para depilação axila e virilha. Amanda';
+    assert.strictEqual(extractClientName(msg2), 'Amanda');
+    const srv2 = extractService(msg2);
+    assert.ok(srv2);
+    assert.match(srv2.name, /Combo Depilação: Axila \+ Virilha/i);
+    assert.strictEqual(srv2.subServices.length, 2);
+
+    const catalogRes = await handleOwnerCommands('5521993826303', 'Consultar tabela de valores de cílios');
+    assert.strictEqual(catalogRes.action, 'list_catalog');
+    assert.match(catalogRes.reply, /Tabela de Procedimentos e Valores/i);
+    assert.match(catalogRes.reply, /Volume Brasileiro/i);
+  });
+
 });

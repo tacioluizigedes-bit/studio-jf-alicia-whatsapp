@@ -1,9 +1,10 @@
 /**
  * nlpEntityExtractor.ts
  * Processador de Linguagem Natural e Extração Inteligente de Entidades (Slot Filling):
- * - Procedimento/Serviço (ex: "cilio tufinho", "tufinho de seda", "volume brasileiro", "1")
- * - Data (ex: "quarta-feira 14/10", "14/10", "amanhã", "terça")
+ * - Procedimento/Serviço (ex: "cilio tufinho", "tufinho de seda", "volume brasileiro", "limpeza de pele", "1")
+ * - Data (ex: "quarta-feira 14/10", "14/10", "dia 03", "amanhã", "terça")
  * - Horário (ex: "09:00", "às 9h", "14:30", "de manhã")
+ * - Nome da Cliente (ex: "Marcar cliente dia 03 às 14hs - Fernanda limpeza de pele" -> "Fernanda")
  */
 
 import { DateTime } from 'luxon';
@@ -44,7 +45,7 @@ export interface ExtractedBookingEntities {
  * Remove acentuação e converte para minúsculas
  */
 function normalizeText(text: string): string {
-  return text
+  return (text || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -75,8 +76,8 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     return {
       id: s.id,
       name: s.name,
-      price: s.price,
-      durationMinutes: s.durationMinutes,
+      price: Number(s.price),
+      durationMinutes: Number(s.durationMinutes) || 60,
       category: s.category,
     };
   };
@@ -193,7 +194,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
   }
 
   // 1.5 Depilação (Detecção precisa de cada região solicitada)
-  // Axila
   if (norm.includes('axila') || norm.includes('axilas')) {
     const s = getFromConfig('dep_axila');
     if (s && !foundServices.some(item => item.id === s.id)) {
@@ -201,7 +201,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Virilha
   if (norm.includes('virilha') || norm.includes('virilia')) {
     if (norm.includes('total') || norm.includes('completa')) {
       const s = getFromConfig('dep_virilha_total');
@@ -216,7 +215,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Buço
   if (norm.includes('buco') || norm.includes('buço')) {
     const s = getFromConfig('dep_buco');
     if (s && !foundServices.some(item => item.id === s.id)) {
@@ -224,7 +222,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Meia Perna
   if (norm.includes('meia perna') || norm.includes('1/2 perna')) {
     const s = getFromConfig('dep_meia_perna');
     if (s && !foundServices.some(item => item.id === s.id)) {
@@ -237,7 +234,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Faixa do umbigo
   if (norm.includes('umbigo')) {
     const s = getFromConfig('dep_faixa_umbigo');
     if (s && !foundServices.some(item => item.id === s.id)) {
@@ -245,7 +241,6 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Mento / Queixo
   if (norm.includes('mento') || norm.includes('queixo')) {
     const s = getFromConfig('dep_mento');
     if (s && !foundServices.some(item => item.id === s.id)) {
@@ -253,11 +248,26 @@ export function extractAllServices(text: string, currentStep?: string): Extracte
     }
   }
 
-  // Rosto Completo
   if (norm.includes('rosto completo') || (norm.includes('rosto') && !norm.includes('sobrancelha') && !norm.includes('pele'))) {
     const s = getFromConfig('dep_rosto_completo');
     if (s && !foundServices.some(item => item.id === s.id)) {
       foundServices.push(s);
+    }
+  }
+
+  // 1.6 Busca dinâmica em qualquer procedimento customizado cadastrado pela Janaína no Dashboard/Catálogo
+  if (foundServices.length === 0) {
+    for (const s of SALON_CONFIG.services as any[]) {
+      const sNorm = normalizeText(s.name);
+      if (sNorm && norm.includes(sNorm)) {
+        foundServices.push({
+          id: s.id,
+          name: s.name,
+          price: Number(s.price),
+          durationMinutes: Number(s.durationMinutes) || 60,
+          category: s.category,
+        });
+      }
     }
   }
 
@@ -427,6 +437,27 @@ export function extractDate(text: string, referenceDate?: DateTime): { dateStr: 
     }
   }
 
+  // 1.5 "dia DD" (ex: "dia 03", "dia 14")
+  const dayOnlyMatch = norm.match(/\bdia\s+(\d{1,2})\b/);
+  if (dayOnlyMatch) {
+    const day = parseInt(dayOnlyMatch[1], 10);
+    let dt = DateTime.fromObject({ year: now.year, month: now.month, day }, { zone: tz });
+    if (dt.isValid && dt < now.startOf('day')) {
+      const nextMonth = now.plus({ months: 1 });
+      const nextDt = DateTime.fromObject({ year: nextMonth.year, month: nextMonth.month, day }, { zone: tz });
+      if (nextDt.isValid) {
+        dt = nextDt;
+      }
+    }
+    if (dt.isValid) {
+      return {
+        dateStr: dt.toISODate() || '',
+        dateFormatted: dt.toFormat('dd/MM'),
+        weekdayName: dt.setLocale('pt-BR').toFormat('cccc'),
+      };
+    }
+  }
+
   // 2. Termos Relativos: "hoje", "amanhã"
   if (norm.includes('amanha')) {
     const dt = now.plus({ days: 1 });
@@ -478,8 +509,10 @@ export function extractDate(text: string, referenceDate?: DateTime): { dateStr: 
 export function extractTime(text: string): { timeStr?: string; periodOfDay?: 'morning' | 'afternoon' } | undefined {
   const norm = normalizeText(text);
 
-  // Remove datas no formato DD/MM para não confundir dia/mês com hora
-  const cleanedForTime = norm.replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g, ' ');
+  // Remove datas no formato DD/MM e "dia DD" para não confundir dia/mês com hora
+  const cleanedForTime = norm
+    .replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g, ' ')
+    .replace(/\bdia\s+\d{1,2}\b/g, ' ');
 
   // Prioriza horários explícitos com sufixo (14hs, 14h, 14h30, 14:00, às 14)
   const explicitTimeRegex =
@@ -530,49 +563,117 @@ export function extractTime(text: string): { timeStr?: string; periodOfDay?: 'mo
 }
 
 /**
- * 3.5 Extração do Nome da Cliente (ex: "Sou a Mariana Costa", "Nome dela: Renata", "cliente Renata")
+ * Palavras reservadas do domínio (verbos, preposições, dias, horários e termos de procedimentos)
+ * que nunca fazem parte do nome próprio de uma cliente.
+ */
+const DOMAIN_STOP_WORDS = new Set([
+  'marcar', 'marca', 'agendar', 'agenda', 'encaixar', 'encaixa', 'reservar', 'reserva',
+  'colocar', 'coloca', 'confirmar', 'confirma', 'cliente', 'clientes', 'uma', 'um',
+  'para', 'pra', 'pro', 'as', 'às', 'a', 'o', 'os', 'de', 'da', 'do', 'das', 'dos',
+  'em', 'na', 'no', 'nas', 'nos', 'com', 'sem', 'por', 'e', 'ou',
+  'hoje', 'amanha', 'amanhã', 'ontem', 'depois', 'dia', 'dias',
+  'segunda', 'terca', 'terça', 'quarta', 'quinta', 'sexta', 'sabado', 'sábado', 'domingo', 'feira',
+  'horario', 'horário', 'hora', 'horas', 'hs', 'hrs', 'hr', 'min', 'minutos', 'manha', 'manhã', 'tarde', 'noite',
+  'vaga', 'procedimento', 'procedimentos', 'servico', 'serviço', 'servicos', 'serviços',
+  'fazer', 'realizar', 'quero', 'gostaria', 'preciso', 'favor', 'oi', 'ola', 'olá', 'bom', 'boa', 'tudo', 'bem', 'linda', 'jana', 'janaina', 'janaína', 'alicia', 'alícia',
+  'meu', 'minha', 'nome', 'dela', 'dele', 'eh', 'é', 'sou', 'chamo', 'aqui', 'chamada',
+  'telefone', 'tel', 'celular', 'whatsapp', 'contato', 'numero', 'número',
+  'extensao', 'extensão', 'alongamento', 'colocacao', 'colocação', 'manutencao', 'manutenção', 'aplicacao', 'aplicação',
+  'cilios', 'cílios', 'cilio', 'cílio', 'tufinho', 'tufinhos', 'seda', 'light', 'volume',
+  'brasileiro', 'brasileirinho', 'fio', 'classico', 'clássico', 'egipcio', 'egípcio', 'fox', 'eyes', 'mega',
+  'sobrancelha', 'sobrancelhas', 'design', 'henna', 'combos', 'combo',
+  'depilacao', 'depilação', 'avulsa', 'unitaria', 'unitária', 'cera', 'axila', 'axilas',
+  'virilha', 'virilia', 'simples', 'total', 'completa', 'buco', 'buço', 'perna', 'pernas',
+  'meia', 'inteira', 'faixa', 'umbigo', 'mento', 'queixo', 'rosto', 'completo',
+  'limpeza', 'pele', 'profunda', 'facial', 'estetica', 'estética', 'lash', 'lifting', 'brow', 'lamination', 'hidratacao', 'hidratação', 'especial', 'studio', 'jf'
+]);
+
+function cleanCandidateNameTokens(rawSegment: string): string | undefined {
+  // Remove datas, horas e números
+  const withoutNumbers = rawSegment
+    .replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g, ' ')
+    .replace(/\b\d{1,2}(?:[:h]\d{2})?\s*(?:hs|hrs|hr|h|horas|min)?\b/gi, ' ')
+    .replace(/\b\d+\b/g, ' ');
+
+  const rawTokens = withoutNumbers
+    .split(/[\s,;:.|\-()\[\]/]+/)
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  // Coleta também palavras dinâmicas do catálogo de serviços atual
+  const dynamicServiceWords = new Set<string>();
+  for (const s of (SALON_CONFIG.services || []) as any[]) {
+    for (const w of normalizeText(s.name || '').split(/\s+/)) {
+      if (w.length >= 3) dynamicServiceWords.add(w);
+    }
+  }
+
+  const nameTokens: string[] = [];
+  for (const token of rawTokens) {
+    const cleanToken = token.replace(/[^A-ZÀ-Úa-zà-ú]/g, '');
+    if (cleanToken.length < 2) continue;
+    const normToken = normalizeText(cleanToken);
+    if (DOMAIN_STOP_WORDS.has(normToken) || dynamicServiceWords.has(normToken)) {
+      if (nameTokens.length > 0) {
+        // Se já começou a capturar o nome próprio e encontrou palavra de procedimento/data, encerra o nome
+        break;
+      }
+      continue;
+    }
+    // Capitaliza primeira letra se necessário
+    const formattedToken = cleanToken.charAt(0).toUpperCase() + cleanToken.slice(1);
+    nameTokens.push(formattedToken);
+    if (nameTokens.length >= 3) break;
+  }
+
+  if (nameTokens.length > 0) {
+    return nameTokens.join(' ');
+  }
+  return undefined;
+}
+
+/**
+ * 3.5 Extração do Nome da Cliente
+ * Suporta:
+ * - "Marcar cliente dia 03 às 14hs - Fernanda limpeza de pele" -> "Fernanda"
+ * - "Agendar uma cliente às 14hs hoje para depilação axila e virilha. Amanda" -> "Amanda"
+ * - "Nome: Maria Clara Silva", "Nome dela: Renata", "Sou a Mariana Costa"
+ * - "Marcar cliente Fernanda dia 03 às 14hs limpeza de pele" -> "Fernanda"
  */
 export function extractClientName(text: string): string | undefined {
-  // Padrão 1: "Nome: Maria Clara Silva", "Nome dela: Renata", "Cliente: Renata"
+  if (!text) return undefined;
+
+  // Padrão 1: Rótulo explícito ("Nome: Maria Clara", "Nome dela: Renata", "Cliente: Renata")
   const ownerPattern = text.match(
     /(?:nome\s+dela|nome\s+da\s+cliente|meu\s+nome|nome|cliente)\s*[:=-]\s*([A-ZÀ-Úa-zà-ú]+(?:\s+[A-ZÀ-Úa-zà-ú]+){0,4})/i
   );
   if (ownerPattern && ownerPattern[1]) {
-    const cleaned = ownerPattern[1]
-      .replace(/\b(amanha|amanhã|hoje|para|as|às|dia|extensao|extensão|cilios|cílios|manutencao|manutenção|sobrancelha|telefone|tel|celular|whatsapp)\b.*/i, '')
-      .trim();
-    if (cleaned.length >= 2) return cleaned;
+    const cleaned = cleanCandidateNameTokens(ownerPattern[1]);
+    if (cleaned) return cleaned;
   }
 
-  // Padrão 2: "marcar cliente Renata", "agendar cliente Renata", "marcar a Renata"
-  const directClientMatch = text.match(
-    /(?:marcar|agendar|encaixar)\s+(?:a\s+cliente|uma\s+cliente\s+chamada|cliente|a)\s+([A-ZÀ-Úa-zà-ú]+(?:\s+[A-ZÀ-Úa-zà-ú]+){0,2})/i
+  // Padrão 2: "Sou a Mariana Costa", "Meu nome é Juliana", "Me chamo Fernanda"
+  const selfIntroMatch = text.match(
+    /(?:sou a|sou o|meu nome [eé]|me chamo|aqui [eé] a|nome dela [eé])\s+([A-ZÀ-Úa-zà-ú]+(?:\s+[A-ZÀ-Úa-zà-ú]+){0,3})/i
   );
-  if (directClientMatch && directClientMatch[1]) {
-    const cleaned = directClientMatch[1]
-      .replace(/\b(amanha|amanhã|hoje|para|as|às|dia|na|no|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|telefone|tel)\b.*/i, '')
-      .trim();
-    if (cleaned.length >= 2 && !/^(uma|cliente)$/i.test(cleaned)) return cleaned;
+  if (selfIntroMatch && selfIntroMatch[1]) {
+    const cleaned = cleanCandidateNameTokens(selfIntroMatch[1]);
+    if (cleaned) return cleaned;
   }
 
-  // Padrão 3: "Sou a Mariana Costa", "Meu nome é Juliana"
-  const match = text.match(/(?:sou a|sou o|meu nome [eé]|me chamo|aqui [eé] a|nome dela [eé])\s+([A-ZÀ-Úa-zà-ú]+(?:\s+[A-ZÀ-Úa-zà-ú]+){0,3})/i);
-  if (match && match[1]) {
-    const raw = match[1]
-      .replace(/\b(quero|gostaria|preciso|para|dia|agendar|marcar|amanha|amanhã|hoje|telefone|tel|meu)\b.*/i, '')
-      .trim();
-    if (raw.length >= 2) {
-      return raw;
+  // Padrão 3: Após separador de traço, dois-pontos ou ponto (ex: "dia 03 às 14hs - Fernanda limpeza de pele" ou "... virilha. Amanda")
+  const afterSeparatorMatches = text.matchAll(/(?:[-:•|]|\.\s+)\s*([A-ZÀ-Úa-zà-ú][^.\n|]*)/g);
+  for (const m of afterSeparatorMatches) {
+    if (m[1]) {
+      const cleaned = cleanCandidateNameTokens(m[1]);
+      if (cleaned) return cleaned;
     }
   }
-    // Padrão 4: Nome no final da mensagem após ponto, quebra de linha ou vírgula (ex: "... axila e virilha. Amanda" ou "virilha, Amanda")
-  const trailingNameMatch = text.match(/(?:[.\n,]\s*|\b(?:para|cliente|nome)\s+)([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,2})\s*$/);
-  if (trailingNameMatch && trailingNameMatch[1]) {
-    const candidate = trailingNameMatch[1].trim();
-    const invalidWords = /^(hoje|amanha|amanhã|ontem|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|depilacao|depilação|cilios|cílios|sobrancelha|tufinho|axila|virilha|buco|buço|rosto|perna|henna|agendar|marcar|confirmar|combo|pele|limpeza)$/i;
-    if (candidate.length >= 2 && !invalidWords.test(candidate)) {
-      return candidate;
-    }
+
+  // Padrão 4: Extração residual global (remove datas, horários, verbos de comando e termos de procedimentos)
+  const residualName = cleanCandidateNameTokens(text);
+  if (residualName) {
+    return residualName;
   }
 
   return undefined;

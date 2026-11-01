@@ -977,17 +977,27 @@ export class AppointmentService {
       const isExpired = isPending && diffMs <= 0;
 
       const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz }).setLocale('pt-BR');
-      const aptDuration = inferAppointmentDurationMinutes(apt.service);
+      let cleanClientName = (apt.clientName || '').replace(/\s+(?:às|as|para|no|na)$/i, '').trim();
+      if (!cleanClientName || /^cliente(\s*\(.*\))?$/i.test(cleanClientName)) {
+        const nameNoteMatch = (apt.notes || '').match(/cliente:\s*([^|;,\n\]]+)/i);
+        if (nameNoteMatch) cleanClientName = nameNoteMatch[1].trim();
+      }
+      let cleanService = apt.service;
+      if (/studio\s*jf|procedimento\s*studio/i.test(cleanService)) {
+        const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n\]]+)/i);
+        cleanService = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
+      }
+      const aptDuration = inferAppointmentDurationMinutes(cleanService);
       const aptEndDt = aptDt.plus({ minutes: aptDuration });
 
       return {
         id: apt.id,
-        clientName: apt.clientName,
-        customerName: apt.clientName,
+        clientName: cleanClientName,
+        customerName: cleanClientName,
         whatsappPhone: apt.whatsappPhone,
         customerPhone: apt.whatsappPhone,
-        service: apt.service,
-        serviceName: apt.service,
+        service: cleanService,
+        serviceName: cleanService,
         durationMinutes: aptDuration,
         durationLabel: formatDurationLabel(aptDuration),
         appointmentDate: apt.appointmentDate.toISOString(),

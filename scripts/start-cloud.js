@@ -32,5 +32,12 @@ try {
   console.warn('⚠️ Aviso ao executar prisma db push:', err.message);
 }
 
+// 2.1 Higieniza registros legados ("Cliente (Agendada pela Janaína)" / "Procedimento Studio JF")
+try {
+  execSync('node scripts/fix-db-records.js', { stdio: 'inherit' });
+} catch (err) {
+  console.warn('⚠️ Aviso ao higienizar registros legados:', err.message);
+}
+
 // 3. Inicia o servidor principal 24/7
 require('../dist/index.js');
