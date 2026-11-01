@@ -473,7 +473,12 @@ export async function reportDailyAgenda(
 
   for (const apt of appointments) {
     const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
-    const aptDuration = inferAppointmentDurationMinutes(apt.service);
+    let displayService = apt.service;
+    if (/studio\s*jf|procedimento\s*studio/i.test(displayService)) {
+      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      displayService = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
+    }
+    const aptDuration = inferAppointmentDurationMinutes(displayService);
     const aptEndDt = aptDt.plus({ minutes: aptDuration });
     const durLabel = formatDurationLabel(aptDuration);
     let statusLabel = '[Confirmado]';
@@ -621,7 +626,12 @@ export async function reportUpcomingAgenda(
 
   for (const apt of allAppointments) {
     const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
-    const aptDuration = inferAppointmentDurationMinutes(apt.service);
+    let displayService = apt.service;
+    if (/studio\s*jf|procedimento\s*studio/i.test(displayService)) {
+      const noteMatch = (apt.notes || '').match(/procedimento:\s*([^|;,\n]+)/i);
+      displayService = noteMatch ? noteMatch[1].trim() : 'Design de Sobrancelha';
+    }
+    const aptDuration = inferAppointmentDurationMinutes(displayService);
     const aptEndDt = aptDt.plus({ minutes: aptDuration });
     const durLabel = formatDurationLabel(aptDuration);
     const dayKey = aptDt.toFormat('yyyy-MM-dd');
@@ -1000,9 +1010,19 @@ export async function handleOwnerDirectBooking(
     millisecond: 0,
   });
 
-  const serviceName = extractedSrv?.name || 'Procedimento Studio JF';
-  const totalAmount = extractedSrv?.price || 60.0;
-  const durationMinutes = extractedSrv?.durationMinutes || inferAppointmentDurationMinutes(serviceName);
+  if (!extractedSrv) {
+    const askServiceMsg =
+      `Jana, identifiquei o horário (${targetDt.toFormat('HH:mm')}), mas não consegui identificar qual procedimento a cliente vai fazer! 💅✨\n\n` +
+      `Por favor, me informe o serviço desejado (ex: *Tufinhos de Seda*, *Volume Brasileiro*, *Design de Sobrancelha* ou *Henna*) para eu agendar certinho na grade com o tempo e valor corretos! 💕`;
+    if (whatsappClient) {
+      await sendHumanizedMessage(whatsappClient, ownerPhone, askServiceMsg, 3500);
+    }
+    return askServiceMsg;
+  }
+
+  const serviceName = extractedSrv.name;
+  const totalAmount = extractedSrv.price;
+  const durationMinutes = extractedSrv.durationMinutes;
   const durationLabel = formatDurationLabel(durationMinutes);
   const clientName = extractedName || 'Cliente (Agendada pela Janaína)';
 
