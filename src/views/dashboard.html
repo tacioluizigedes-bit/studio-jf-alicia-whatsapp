@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Studio JF Designer - Dashboard de Agendamentos & Sinais</title>
+  <title>Studio JF Designer - Dashboard de Agendamentos & Procedimentos</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -101,15 +101,21 @@
           </div>
 
           <!-- Botão Atualizar -->
-          <button onclick="fetchDashboardData()" title="Recarregar dados" aria-label="Atualizar dados" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center gap-1.5 text-xs font-medium">
+          <button onclick="refreshActiveTab()" title="Recarregar dados" aria-label="Atualizar dados" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center gap-1.5 text-xs font-medium">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             <span class="hidden md:inline">Atualizar</span>
+          </button>
+
+          <!-- Botão Atalho Aba Procedimentos -->
+          <button onclick="switchDashboardTab('CATALOG')" title="Gerenciar Procedimentos, Tempos e Valores" aria-label="Gerenciar Procedimentos" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 active:scale-95 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <span class="text-sm leading-none">💅</span>
+            <span class="hidden md:inline">Procedimentos & Valores</span>
           </button>
 
           <!-- Botão Resumo Semanal Janaína -->
           <button onclick="openWeeklyReportModal()" title="Resumo Semanal da Janaína via WhatsApp" aria-label="Resumo Semanal Janaína" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 active:scale-95 text-pink-400 border border-pink-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">📊</span>
-            <span class="hidden md:inline">Resumo Semanal Janaína</span>
+            <span class="hidden md:inline">Resumo Semanal</span>
           </button>
 
           <!-- Botão Página de Agendamento da Cliente -->
@@ -133,6 +139,10 @@
 
       <!-- Menu Colapsável Mobile (Drawer/Dropdown) -->
       <div id="mobileActionDrawer" class="hidden md:hidden mt-2.5 pt-2.5 border-t border-dark-600 grid grid-cols-1 gap-2">
+        <button onclick="switchDashboardTab('CATALOG'); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-purple-600/15 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>💅</span> Editar Procedimentos, Tempos e Valores</span>
+          <span>➔</span>
+        </button>
         <button onclick="openWeeklyReportModal(); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-600/15 text-pink-300 border border-pink-500/30 text-xs font-semibold flex items-center justify-between">
           <span class="flex items-center gap-2"><span>📊</span> Resumo Semanal da Janaína</span>
           <span>➔</span>
@@ -148,145 +158,318 @@
   <!-- MAIN CONTAINER -->
   <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 flex flex-col gap-4 sm:gap-6 w-full">
 
-    <!-- 1. NAVEGAÇÃO DE SEMANAS & PERÍODO TEMPORAL -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-dark-800 p-3.5 sm:p-4 rounded-2xl border border-dark-600 shadow-md">
-      <!-- Controles [ < ] [ Semana Atual ] [ > ] Centralizados no Mobile -->
-      <div class="flex items-center justify-center gap-2 w-full sm:w-auto">
-        <button onclick="navigateWeek(-1)" aria-label="Semana anterior" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <button onclick="navigateCurrentWeek()" class="min-h-[44px] flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-100 text-xs sm:text-sm font-semibold border border-dark-600 transition whitespace-nowrap">
-          Semana Atual
-        </button>
-        <button onclick="navigateWeek(1)" aria-label="Próxima semana" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-
-      <!-- Data da Semana logo abaixo no Mobile, à direita no Desktop -->
-      <div class="text-center sm:text-right w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-dark-700/80">
-        <p class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 font-semibold">Semana Selecionada</p>
-        <h2 id="periodLabel" class="text-sm sm:text-lg font-extrabold text-white tracking-tight mt-0.5">Carregando período...</h2>
-      </div>
+    <!-- SELETOR DE ABAS PRINCIPAIS DO DASHBOARD -->
+    <div class="bg-dark-800 p-1.5 rounded-2xl border border-dark-600 flex flex-col sm:flex-row gap-1.5 shadow-lg">
+      <button id="tabBtnAppointments" onclick="switchDashboardTab('APPOINTMENTS')" class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20">
+        <span>📅</span>
+        <span>Clientes Agendadas & Sinais</span>
+      </button>
+      <button id="tabBtnCatalog" onclick="switchDashboardTab('CATALOG')" class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700">
+        <span>💅</span>
+        <span>Procedimentos, Tempos & Valores</span>
+        <span id="catalogCountBadge" class="px-2 py-0.5 rounded-full text-[11px] bg-pink-500/20 text-pink-300 border border-pink-500/30 font-extrabold">23</span>
+      </button>
     </div>
 
-    <!-- 2. GRID DE CARDS DE MÉTRICAS (KPIs): 1 col Mobile | 2x2 Tablet (md) | 4 cols Desktop (lg) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <!-- Card 1: Total Agendamentos -->
-      <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total na Semana</span>
-          <span class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm shrink-0">📅</span>
+    <!-- ======================================================================= -->
+    <!-- ABA 1: CLIENTES AGENDADAS & SINAIS                                      -->
+    <!-- ======================================================================= -->
+    <div id="tabContentAppointments" class="flex flex-col gap-4 sm:gap-6">
+
+      <!-- 1. NAVEGAÇÃO DE SEMANAS & PERÍODO TEMPORAL -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-dark-800 p-3.5 sm:p-4 rounded-2xl border border-dark-600 shadow-md">
+        <!-- Controles [ < ] [ Semana Atual ] [ > ] Centralizados no Mobile -->
+        <div class="flex items-center justify-center gap-2 w-full sm:w-auto">
+          <button onclick="navigateWeek(-1)" aria-label="Semana anterior" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button onclick="navigateCurrentWeek()" class="min-h-[44px] flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-100 text-xs sm:text-sm font-semibold border border-dark-600 transition whitespace-nowrap">
+            Semana Atual
+          </button>
+          <button onclick="navigateWeek(1)" aria-label="Próxima semana" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
+          </button>
         </div>
-        <div class="flex items-baseline justify-between sm:block">
-          <div id="kpiTotalCount" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap">0</div>
-          <p class="text-xs text-slate-400 sm:mt-1">Horários reservados na grade</p>
+
+        <!-- Data da Semana logo abaixo no Mobile, à direita no Desktop -->
+        <div class="text-center sm:text-right w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-dark-700/80">
+          <p class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 font-semibold">Semana Selecionada</p>
+          <h2 id="periodLabel" class="text-sm sm:text-lg font-extrabold text-white tracking-tight mt-0.5">Carregando período...</h2>
         </div>
       </div>
 
-      <!-- Card 2: Sinais Pendentes (Cliente Nova) -->
-      <div class="bg-gradient-to-br from-amber-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-amber-600/30 flex flex-col justify-between shadow-lg shadow-amber-950/20">
-        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-amber-400 pulse-urgent shrink-0"></span>
-            Sinais Pendentes
-          </span>
-          <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">⏳</span>
-        </div>
-        <div>
-          <div class="flex items-baseline justify-between sm:justify-start gap-2 flex-wrap">
-            <div id="kpiPendingCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-tight whitespace-nowrap">0</div>
-            <span id="kpiReceiptBadge" class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30 font-semibold hidden whitespace-nowrap">0 c/ comprovante</span>
+      <!-- 2. GRID DE CARDS DE MÉTRICAS (KPIs): 1 col Mobile | 2x2 Tablet (md) | 4 cols Desktop (lg) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <!-- Card 1: Total Agendamentos -->
+        <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total na Semana</span>
+            <span class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm shrink-0">📅</span>
           </div>
-          <p id="kpiPendingTotal" class="text-xs text-amber-200/80 mt-1 font-medium">Clientes de 1ª vez aguardando Pix</p>
+          <div class="flex items-baseline justify-between sm:block">
+            <div id="kpiTotalCount" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap">0</div>
+            <p class="text-xs text-slate-400 sm:mt-1">Horários reservados na grade</p>
+          </div>
+        </div>
+
+        <!-- Card 2: Sinais Pendentes (Cliente Nova) -->
+        <div class="bg-gradient-to-br from-amber-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-amber-600/30 flex flex-col justify-between shadow-lg shadow-amber-950/20">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 pulse-urgent shrink-0"></span>
+              Sinais Pendentes
+            </span>
+            <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">⏳</span>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between sm:justify-start gap-2 flex-wrap">
+              <div id="kpiPendingCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-tight whitespace-nowrap">0</div>
+              <span id="kpiReceiptBadge" class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30 font-semibold hidden whitespace-nowrap">0 c/ comprovante</span>
+            </div>
+            <p id="kpiPendingTotal" class="text-xs text-amber-200/80 mt-1 font-medium">Clientes de 1ª vez aguardando Pix</p>
+          </div>
+        </div>
+
+        <!-- Card 3: Sinais Confirmados / Isentas -->
+        <div class="bg-gradient-to-br from-emerald-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-emerald-600/30 flex flex-col justify-between shadow-lg shadow-emerald-950/20">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Confirmados & Isentas</span>
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold shrink-0">✅</span>
+          </div>
+          <div class="flex items-baseline justify-between sm:block gap-2">
+            <div id="kpiConfirmedTotal" class="text-2xl sm:text-3xl font-extrabold text-emerald-300 tracking-tight whitespace-nowrap">R$ 0,00</div>
+            <p id="kpiConfirmedCount" class="text-xs text-emerald-200/80 sm:mt-1 font-medium truncate">0 agendamento(s) garantido(s)</p>
+          </div>
+        </div>
+
+        <!-- Card 4: Expirados / Cancelados -->
+        <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Expirados / Cancelados</span>
+            <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm font-bold shrink-0">❌</span>
+          </div>
+          <div class="flex items-baseline justify-between sm:block">
+            <div id="kpiExpiredCount" class="text-2xl sm:text-3xl font-extrabold text-slate-300 tracking-tight whitespace-nowrap">0</div>
+            <p id="kpiLossRate" class="text-xs text-slate-400 sm:mt-1 font-medium">0% taxa de cancelamento</p>
+          </div>
         </div>
       </div>
 
-      <!-- Card 3: Sinais Confirmados / Isentas -->
-      <div class="bg-gradient-to-br from-emerald-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-emerald-600/30 flex flex-col justify-between shadow-lg shadow-emerald-950/20">
-        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Confirmados & Isentas</span>
-          <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold shrink-0">✅</span>
+      <!-- 3. FILTROS RÁPIDOS (SCROLL HORIZONTAL SUAVE) & CAMPO DE BUSCA 100% MOBILE -->
+      <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+        <!-- Pílulas Deslizáveis (Touch Scrollable sem scrollbar visível) -->
+        <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
+          <button onclick="setFilter('ALL')" id="filter-ALL" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition shadow-sm">
+            Todos (<span id="count-ALL">0</span>)
+          </button>
+          <button onclick="setFilter('PENDING')" id="filter-PENDING" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            ⏳ Pendentes (<span id="count-PENDING">0</span>)
+          </button>
+          <button onclick="setFilter('EXEMPT')" id="filter-EXEMPT" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            💖 Isentas (<span id="count-EXEMPT">0</span>)
+          </button>
+          <button onclick="setFilter('CONFIRMED')" id="filter-CONFIRMED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            ✅ Confirmados (<span id="count-CONFIRMED">0</span>)
+          </button>
+          <button onclick="setFilter('EXPIRED')" id="filter-EXPIRED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            ❌ Expirados (<span id="count-EXPIRED">0</span>)
+          </button>
         </div>
-        <div class="flex items-baseline justify-between sm:block gap-2">
-          <div id="kpiConfirmedTotal" class="text-2xl sm:text-3xl font-extrabold text-emerald-300 tracking-tight whitespace-nowrap">R$ 0,00</div>
-          <p id="kpiConfirmedCount" class="text-xs text-emerald-200/80 sm:mt-1 font-medium truncate">0 agendamento(s) garantido(s)</p>
+
+        <!-- Barra de Busca (100% da largura no celular) -->
+        <div class="relative w-full md:w-72 shrink-0">
+          <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar cliente, procedimento ou telefone..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
       </div>
 
-      <!-- Card 4: Expirados / Cancelados -->
-      <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Expirados / Cancelados</span>
-          <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm font-bold shrink-0">❌</span>
-        </div>
-        <div class="flex items-baseline justify-between sm:block">
-          <div id="kpiExpiredCount" class="text-2xl sm:text-3xl font-extrabold text-slate-300 tracking-tight whitespace-nowrap">0</div>
-          <p id="kpiLossRate" class="text-xs text-slate-400 sm:mt-1 font-medium">0% taxa de cancelamento</p>
+      <!-- 4A. VISÃO MOBILE & TABLET PEQUENO: LISTA DE CARDS VERTICAIS (block md:hidden) -->
+      <div id="appointmentMobileList" class="block md:hidden space-y-3">
+        <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+          Carregando agendamentos...
         </div>
       </div>
+
+      <!-- 4B. VISÃO DESKTOP: TABELA CLÁSSICA DE AGENDAMENTOS & BLOQUEIOS (hidden md:block) -->
+      <div class="hidden md:block bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-dark-700/60 border-b border-dark-600 text-slate-300 uppercase tracking-wider font-semibold">
+              <tr>
+                <th scope="col" class="py-3.5 px-4">Data & Horário</th>
+                <th scope="col" class="py-3.5 px-4">Cliente & Perfil</th>
+                <th scope="col" class="py-3.5 px-4">Serviço & Valores</th>
+                <th scope="col" class="py-3.5 px-4">Status do Sinal</th>
+                <th scope="col" class="py-3.5 px-4 text-right">Ações Operacionais</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentTableBody" class="divide-y divide-dark-700/60 text-slate-300">
+              <tr>
+                <td colspan="5" class="py-12 text-center text-slate-400">Carregando agendamentos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 3. FILTROS RÁPIDOS (SCROLL HORIZONTAL SUAVE) & CAMPO DE BUSCA 100% MOBILE -->
-    <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
-      <!-- Pílulas Deslizáveis (Touch Scrollable sem scrollbar visível) -->
-      <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
-        <button onclick="setFilter('ALL')" id="filter-ALL" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition shadow-sm">
-          Todos (<span id="count-ALL">0</span>)
-        </button>
-        <button onclick="setFilter('PENDING')" id="filter-PENDING" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-          ⏳ Pendentes (<span id="count-PENDING">0</span>)
-        </button>
-        <button onclick="setFilter('EXEMPT')" id="filter-EXEMPT" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-          💖 Isentas (<span id="count-EXEMPT">0</span>)
-        </button>
-        <button onclick="setFilter('CONFIRMED')" id="filter-CONFIRMED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-          ✅ Confirmados (<span id="count-CONFIRMED">0</span>)
-        </button>
-        <button onclick="setFilter('EXPIRED')" id="filter-EXPIRED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-          ❌ Expirados (<span id="count-EXPIRED">0</span>)
+    <!-- ======================================================================= -->
+    <!-- ABA 2: CATÁLOGO DE PROCEDIMENTOS, TEMPOS DE EXECUÇÃO E VALORES          -->
+    <!-- ======================================================================= -->
+    <div id="tabContentCatalog" class="hidden flex-col gap-4 sm:gap-6">
+
+      <!-- Cabeçalho de Gestão de Procedimentos -->
+      <div class="bg-gradient-to-r from-dark-800 via-dark-800 to-pink-950/30 p-4 sm:p-6 rounded-2xl border border-pink-500/25 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-500/15 text-pink-300 border border-pink-500/30">
+            <span>⚡ Sincronização Instantânea</span>
+          </div>
+          <h2 class="text-base sm:text-xl font-extrabold text-white">Gerenciar Procedimentos, Tempos & Valores</h2>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+            Altere o <strong>tempo de execução (minutos)</strong>, o <strong>valor (R$)</strong> ou ative <strong>promoções</strong> em qualquer procedimento. As mudanças atualizam na mesma hora o painel das clientes (<a href="/agendar" target="_blank" class="text-pink-400 underline font-semibold">/agendar</a>) e os cálculos de agenda da <strong>Alícia no WhatsApp</strong>.
+          </p>
+        </div>
+
+        <button onclick="openNewServiceModal()" class="w-full md:w-auto min-h-[46px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-lg shadow-pink-600/25 transition flex items-center justify-center gap-2 shrink-0">
+          <span class="text-base leading-none">➕</span>
+          <span>Adicionar Novo Procedimento</span>
         </button>
       </div>
 
-      <!-- Barra de Busca (100% da largura no celular) -->
-      <div class="relative w-full md:w-72 shrink-0">
-        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar cliente, procedimento ou telefone..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
-        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </div>
-    </div>
+      <!-- Barra de Filtros de Categoria + Busca de Procedimentos -->
+      <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+        <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
+          <button onclick="setCatalogCategory('ALL')" id="catBtn-ALL" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition">
+            Todos
+          </button>
+          <button onclick="setCatalogCategory('PROMO')" id="catBtn-PROMO" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            🔥 Em Promoção
+          </button>
+          <button onclick="setCatalogCategory('colocacao_cilios')" id="catBtn-colocacao_cilios" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            👁️ Colocação de Cílios
+          </button>
+          <button onclick="setCatalogCategory('manutencao_cilios')" id="catBtn-manutencao_cilios" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            🔄 Manutenção
+          </button>
+          <button onclick="setCatalogCategory('sobrancelhas')" id="catBtn-sobrancelhas" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            ✨ Sobrancelhas
+          </button>
+          <button onclick="setCatalogCategory('combos_depilacao')" id="catBtn-combos_depilacao" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            🍯 Combos Depilação
+          </button>
+          <button onclick="setCatalogCategory('depilacao_unitaria')" id="catBtn-depilacao_unitaria" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            🌸 Depilação Avulsa
+          </button>
+          <button onclick="setCatalogCategory('combos_especiais')" id="catBtn-combos_especiais" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            🎁 Combos Especiais
+          </button>
+          <button onclick="setCatalogCategory('estetica_facial')" id="catBtn-estetica_facial" class="cat-filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+            💆‍♀️ Estética & Outros
+          </button>
+        </div>
 
-    <!-- 4A. VISÃO MOBILE & TABLET PEQUENO: LISTA DE CARDS VERTICAIS (block md:hidden) -->
-    <div id="appointmentMobileList" class="block md:hidden space-y-3">
-      <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
-        Carregando agendamentos...
+        <div class="relative w-full md:w-72 shrink-0">
+          <input type="text" id="catalogSearchInput" oninput="renderCatalog()" placeholder="Buscar procedimento..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
       </div>
-    </div>
 
-    <!-- 4B. VISÃO DESKTOP: TABELA CLÁSSICA DE AGENDAMENTOS & BLOQUEIOS (hidden md:block) -->
-    <div class="hidden md:block bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-xl">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-dark-700/60 border-b border-dark-600 text-slate-300 uppercase tracking-wider font-semibold">
-            <tr>
-              <th scope="col" class="py-3.5 px-4">Data & Horário</th>
-              <th scope="col" class="py-3.5 px-4">Cliente & Perfil</th>
-              <th scope="col" class="py-3.5 px-4">Serviço & Valores</th>
-              <th scope="col" class="py-3.5 px-4">Status do Sinal</th>
-              <th scope="col" class="py-3.5 px-4 text-right">Ações Operacionais</th>
-            </tr>
-          </thead>
-          <tbody id="appointmentTableBody" class="divide-y divide-dark-700/60 text-slate-300">
-            <tr>
-              <td colspan="5" class="py-12 text-center text-slate-400">Carregando agendamentos...</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Grid de Cards de Procedimentos Editáveis -->
+      <div id="catalogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs sm:text-sm text-slate-400">
+          Carregando catálogo de procedimentos...
+        </div>
       </div>
+
     </div>
 
   </main>
 
   <!-- 5. MODAIS (BOTTOM SHEET NO MOBILE / MODAL CENTRAL NO DESKTOP) -->
+
+  <!-- MODAL: ADICIONAR NOVO PROCEDIMENTO -->
+  <div id="newServiceModal" onclick="if(event.target === this) closeNewServiceModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-4 sm:hidden"></div>
+
+      <div class="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-dark-600">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 shrink-0 rounded-xl bg-pink-500/15 text-pink-400 flex items-center justify-center text-xl border border-pink-500/30">
+            💅
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white">Novo Procedimento</h3>
+            <p class="text-xs text-slate-400">Ficará disponível imediatamente no agendamento e na Alícia</p>
+          </div>
+        </div>
+        <button onclick="closeNewServiceModal()" class="min-h-[36px] min-w-[36px] rounded-lg bg-dark-700 text-slate-400 hover:text-white text-lg font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <div class="space-y-3.5 mb-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nome do Procedimento *</label>
+          <input type="text" id="newSvcName" placeholder="Ex: Brow Lamination / Volume Russo" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Categoria *</label>
+            <select id="newSvcCategory" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+              <option value="colocacao_cilios">Colocação de Cílios</option>
+              <option value="manutencao_cilios">Manutenção de Cílios</option>
+              <option value="sobrancelhas">Sobrancelhas</option>
+              <option value="combos_depilacao">Combos de Depilação</option>
+              <option value="depilacao_unitaria">Depilação Unitária</option>
+              <option value="combos_especiais">Combos Especiais</option>
+              <option value="estetica_facial">Estética & Outros</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Selo / Destaque (Opcional)</label>
+            <input type="text" id="newSvcBadge" placeholder="Ex: ✨ Novidade" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">Valor (R$) *</label>
+            <input type="number" id="newSvcPrice" step="0.50" min="1" placeholder="Ex: 85.00" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-sm font-bold text-emerald-300 focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-amber-300 mb-1">Tempo de Execução (min) *</label>
+            <input type="number" id="newSvcDuration" step="5" min="5" value="60" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-sm font-bold text-amber-300 focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <span class="block text-[11px] text-slate-400 mb-1.5">Atalhos de Tempo de Execução:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 20" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">20 min</button>
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 30" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">30 min</button>
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 40" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">40 min</button>
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 60" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">1h (60m)</button>
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 90" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">1h30 (90m)</button>
+            <button type="button" onclick="document.getElementById('newSvcDuration').value = 120" class="px-2.5 py-1 rounded-lg bg-dark-700 hover:bg-dark-600 text-xs text-slate-200 border border-dark-600">2h (120m)</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Descrição (Opcional)</label>
+          <input type="text" id="newSvcDescription" placeholder="Ex: Inclui alinhamento e nutrição dos fios" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-dark-600">
+        <button onclick="closeNewServiceModal()" class="w-full sm:w-auto min-h-[46px] px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 text-xs sm:text-sm font-semibold transition">
+          Cancelar
+        </button>
+        <button id="btnSubmitNewService" onclick="submitNewService()" class="w-full sm:w-auto min-h-[46px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-pink-600/25 transition flex items-center justify-center gap-1.5">
+          <span>✅ Cadastrar Procedimento</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: APROVAR SINAL -->
   <div id="confirmModal" onclick="if(event.target === this) closeConfirmModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
@@ -424,15 +607,58 @@
 
   <!-- JAVASCRIPT DA APLICAÇÃO -->
   <script>
+    let currentDashboardTab = 'APPOINTMENTS';
     let currentWeekOffset = 0;
     let currentFilter = 'ALL';
     let rawAppointments = [];
     let activeAppointmentId = null;
 
+    // Estado do Catálogo de Procedimentos
+    let catalogServices = [];
+    let currentCatalogCategory = 'ALL';
+
     function toggleMobileMenu() {
       const drawer = document.getElementById('mobileActionDrawer');
       if (drawer) {
         drawer.classList.toggle('hidden');
+      }
+    }
+
+    function switchDashboardTab(tab) {
+      currentDashboardTab = tab;
+      const tabApp = document.getElementById('tabContentAppointments');
+      const tabCat = document.getElementById('tabContentCatalog');
+      const btnApp = document.getElementById('tabBtnAppointments');
+      const btnCat = document.getElementById('tabBtnCatalog');
+
+      if (tab === 'CATALOG') {
+        tabApp.classList.add('hidden');
+        tabApp.classList.remove('flex');
+        tabCat.classList.remove('hidden');
+        tabCat.classList.add('flex');
+
+        btnCat.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20';
+        btnApp.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700';
+
+        fetchCatalogServices();
+      } else {
+        tabCat.classList.add('hidden');
+        tabCat.classList.remove('flex');
+        tabApp.classList.remove('hidden');
+        tabApp.classList.add('flex');
+
+        btnApp.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20';
+        btnCat.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700';
+
+        fetchDashboardData();
+      }
+    }
+
+    function refreshActiveTab() {
+      if (currentDashboardTab === 'CATALOG') {
+        fetchCatalogServices();
+      } else {
+        fetchDashboardData();
       }
     }
 
@@ -457,6 +683,372 @@
       }, 4000);
     }
 
+    function formatDurationHuman(mins) {
+      const m = Number(mins) || 60;
+      if (m < 60) return `${m} min`;
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return rem > 0 ? `${h}h${String(rem).padStart(2, '0')}` : `${h}h`;
+    }
+
+    // =========================================================================
+    // FUNÇÕES DO CATÁLOGO DE PROCEDIMENTOS, TEMPOS E VALORES
+    // =========================================================================
+    async function fetchCatalogServices() {
+      try {
+        const res = await fetch('/api/dashboard/services');
+        if (!res.ok) throw new Error('Falha ao buscar procedimentos');
+        const data = await res.json();
+        catalogServices = data.services || [];
+        const badge = document.getElementById('catalogCountBadge');
+        if (badge) badge.innerText = catalogServices.length;
+        renderCatalog();
+      } catch (err) {
+        console.error('Erro ao carregar procedimentos:', err);
+        showToast('Erro ao carregar catálogo de procedimentos', 'error');
+      }
+    }
+
+    function setCatalogCategory(cat) {
+      currentCatalogCategory = cat;
+      document.querySelectorAll('.cat-filter-pill').forEach(btn => {
+        btn.classList.remove('bg-pink-600', 'text-white');
+        btn.classList.add('bg-dark-700', 'text-slate-300');
+      });
+      const activeBtn = document.getElementById('catBtn-' + cat);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-dark-700', 'text-slate-300');
+        activeBtn.classList.add('bg-pink-600', 'text-white');
+      }
+      renderCatalog();
+    }
+
+    function setQuickDuration(serviceId, minutes) {
+      const input = document.getElementById(`svc-duration-${serviceId}`);
+      const label = document.getElementById(`svc-dur-label-${serviceId}`);
+      if (input) input.value = minutes;
+      if (label) label.innerText = formatDurationHuman(minutes);
+    }
+
+    function updateDurationPreview(serviceId) {
+      const input = document.getElementById(`svc-duration-${serviceId}`);
+      const label = document.getElementById(`svc-dur-label-${serviceId}`);
+      if (input && label) {
+        label.innerText = formatDurationHuman(input.value);
+      }
+    }
+
+    function togglePromoFields(serviceId) {
+      const checkbox = document.getElementById(`svc-promo-${serviceId}`);
+      const box = document.getElementById(`svc-promo-box-${serviceId}`);
+      if (checkbox && box) {
+        if (checkbox.checked) {
+          box.classList.remove('hidden');
+        } else {
+          box.classList.add('hidden');
+        }
+      }
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('catalogGrid');
+      if (!grid) return;
+
+      const search = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
+      let filtered = catalogServices;
+
+      if (currentCatalogCategory === 'PROMO') {
+        filtered = filtered.filter(s => s.isPromotional);
+      } else if (currentCatalogCategory !== 'ALL') {
+        filtered = filtered.filter(s => s.category === currentCatalogCategory);
+      }
+
+      if (search) {
+        filtered = filtered.filter(s =>
+          (s.name || '').toLowerCase().includes(search) ||
+          (s.category || '').toLowerCase().includes(search) ||
+          (s.description || '').toLowerCase().includes(search)
+        );
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs sm:text-sm text-slate-400">
+            Nenhum procedimento encontrado para este filtro.
+          </div>
+        `;
+        return;
+      }
+
+      const categories = [
+        { id: 'colocacao_cilios', label: '👁️ Colocação de Cílios' },
+        { id: 'manutencao_cilios', label: '🔄 Manutenção de Cílios' },
+        { id: 'sobrancelhas', label: '✨ Sobrancelhas' },
+        { id: 'combos_depilacao', label: '🍯 Combos de Depilação' },
+        { id: 'depilacao_unitaria', label: '🌸 Depilação Unitária' },
+        { id: 'combos_especiais', label: '🎁 Combos Especiais' },
+        { id: 'estetica_facial', label: '💆‍♀️ Estética & Outros' }
+      ];
+
+      grid.innerHTML = filtered.map(svc => {
+        const isPromo = Boolean(svc.isPromotional);
+        const borderClass = isPromo ? 'border-pink-500/60 shadow-pink-950/30' : 'border-dark-600';
+        const safeName = escapeQuotes(svc.name);
+        const safeDesc = escapeQuotes(svc.description || '');
+        const safeBadge = escapeQuotes(svc.badge || '');
+
+        const categoryOptions = categories.map(cat =>
+          `<option value="${cat.id}" ${svc.category === cat.id ? 'selected' : ''}>${cat.label}</option>`
+        ).join('');
+
+        return `
+          <div class="bg-dark-800 rounded-2xl border ${borderClass} p-4 shadow-lg flex flex-col justify-between gap-3.5 transition hover:border-slate-500">
+            <div class="space-y-3">
+              <!-- Topo: Categoria + Status Promo -->
+              <div class="flex items-center justify-between gap-2">
+                <select id="svc-cat-${svc.id}" class="bg-dark-700 border border-dark-600 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-pink-300 focus:outline-none focus:border-pink-500">
+                  ${categoryOptions}
+                </select>
+                ${isPromo
+                  ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-pink-600 to-amber-500 text-white shadow">🔥 EM PROMOÇÃO</span>`
+                  : `<span class="text-[11px] font-mono text-slate-400">Sinal: R$ ${formatCurrencyBR(Number(svc.price) * 0.3)}</span>`
+                }
+              </div>
+
+              <!-- Nome do Procedimento -->
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Nome do Procedimento</label>
+                <input type="text" id="svc-name-${svc.id}" value="${safeName}" class="w-full min-h-[40px] bg-dark-900/80 border border-dark-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-pink-500">
+              </div>
+
+              <!-- Valor (R$) e Tempo de Execução (min) lado a lado -->
+              <div class="grid grid-cols-2 gap-2.5 bg-dark-900/60 p-3 rounded-xl border border-dark-700">
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-emerald-400 font-bold mb-1">💰 Valor Atual (R$)</label>
+                  <div class="relative">
+                    <span class="absolute left-2.5 top-2.5 text-xs font-bold text-emerald-400">R$</span>
+                    <input type="number" id="svc-price-${svc.id}" step="0.50" min="1" value="${Number(svc.price).toFixed(2)}" class="w-full min-h-[40px] bg-dark-800 border border-emerald-500/40 rounded-lg pl-8 pr-2 py-1.5 text-sm font-extrabold text-emerald-300 focus:outline-none focus:border-emerald-400">
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[10px] uppercase tracking-wider text-amber-300 font-bold">⏱️ Tempo (min)</label>
+                    <span id="svc-dur-label-${svc.id}" class="text-[10px] font-extrabold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">${formatDurationHuman(svc.durationMinutes)}</span>
+                  </div>
+                  <input type="number" id="svc-duration-${svc.id}" oninput="updateDurationPreview('${svc.id}')" step="5" min="5" max="480" value="${svc.durationMinutes || 60}" class="w-full min-h-[40px] bg-dark-800 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-sm font-extrabold text-amber-300 focus:outline-none focus:border-amber-400">
+                </div>
+
+                <!-- Botões rápidos de tempo -->
+                <div class="col-span-2 pt-1 border-t border-dark-700/80 flex items-center justify-between gap-1 flex-wrap">
+                  <span class="text-[10px] text-slate-400 font-medium">Tempo rápido:</span>
+                  <div class="flex items-center gap-1 flex-wrap">
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 15)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">15m</button>
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 30)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">30m</button>
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 40)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">40m</button>
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 60)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">1h</button>
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 90)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">1h30</button>
+                    <button type="button" onclick="setQuickDuration('${svc.id}', 120)" class="px-2 py-0.5 rounded bg-dark-700 hover:bg-dark-600 text-[10px] text-slate-300 border border-dark-600">2h</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Toggle de Promoção + Preço Original -->
+              <div class="bg-dark-900/40 p-2.5 rounded-xl border border-dark-700">
+                <label class="flex items-center justify-between cursor-pointer select-none">
+                  <span class="text-xs font-semibold text-pink-300 flex items-center gap-1.5">
+                    <span>🔥</span> Destacar em Promoção no Site
+                  </span>
+                  <input type="checkbox" id="svc-promo-${svc.id}" onchange="togglePromoFields('${svc.id}')" ${isPromo ? 'checked' : ''} class="w-4 h-4 accent-pink-500 rounded cursor-pointer">
+                </label>
+
+                <div id="svc-promo-box-${svc.id}" class="${isPromo ? '' : 'hidden'} mt-2.5 pt-2.5 border-t border-dark-700 grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[10px] text-slate-400 mb-0.5">Preço "De R$" (Riscado)</label>
+                    <input type="number" id="svc-orig-price-${svc.id}" step="0.50" placeholder="Ex: 100.00" value="${svc.originalPrice ? Number(svc.originalPrice).toFixed(2) : ''}" class="w-full min-h-[36px] bg-dark-800 border border-dark-600 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-pink-500">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-400 mb-0.5">Etiqueta / Selo</label>
+                    <input type="text" id="svc-badge-${svc.id}" placeholder="🔥 Promoção" value="${safeBadge}" class="w-full min-h-[36px] bg-dark-800 border border-dark-600 rounded-lg px-2.5 py-1 text-xs text-pink-300 focus:outline-none focus:border-pink-500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Descrição curta -->
+              <div>
+                <label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Descrição / Observação</label>
+                <input type="text" id="svc-desc-${svc.id}" value="${safeDesc}" placeholder="Descrição exibida para a cliente..." class="w-full min-h-[36px] bg-dark-900/50 border border-dark-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-pink-500">
+              </div>
+            </div>
+
+            <!-- Rodapé de Ações do Procedimento -->
+            <div class="pt-3 border-t border-dark-700 flex items-center gap-2">
+              <button id="btn-save-${svc.id}" onclick="saveServiceChanges('${svc.id}')" class="flex-1 min-h-[42px] py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5">
+                <span>💾 Salvar Alterações</span>
+              </button>
+              <button onclick="deleteServiceItem('${svc.id}', '${safeName}')" title="Excluir procedimento" class="min-h-[42px] px-3 py-2 rounded-xl bg-dark-700 hover:bg-rose-950/60 text-rose-400 border border-dark-600 hover:border-rose-500/40 text-xs font-semibold transition">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function saveServiceChanges(serviceId) {
+      const btn = document.getElementById(`btn-save-${serviceId}`);
+      const name = document.getElementById(`svc-name-${serviceId}`)?.value.trim();
+      const category = document.getElementById(`svc-cat-${serviceId}`)?.value;
+      const price = Number(document.getElementById(`svc-price-${serviceId}`)?.value);
+      const durationMinutes = Number(document.getElementById(`svc-duration-${serviceId}`)?.value);
+      const isPromotional = Boolean(document.getElementById(`svc-promo-${serviceId}`)?.checked);
+      const origPriceRaw = document.getElementById(`svc-orig-price-${serviceId}`)?.value;
+      const badge = document.getElementById(`svc-badge-${serviceId}`)?.value.trim();
+      const description = document.getElementById(`svc-desc-${serviceId}`)?.value.trim();
+
+      if (!name) {
+        showToast('O nome do procedimento não pode ficar vazio.', 'error');
+        return;
+      }
+      if (isNaN(price) || price <= 0) {
+        showToast('Informe um valor (R$) válido maior que zero.', 'error');
+        return;
+      }
+      if (isNaN(durationMinutes) || durationMinutes < 5) {
+        showToast('Informe um tempo de execução válido (mínimo 5 minutos).', 'error');
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳ Salvando...</span>`;
+      }
+
+      try {
+        const payload = {
+          name,
+          category,
+          price,
+          durationMinutes,
+          description,
+          isPromotional,
+          originalPrice: isPromotional && origPriceRaw ? Number(origPriceRaw) : undefined,
+          badge: badge || (isPromotional ? '🔥 Promoção' : undefined)
+        };
+
+        const res = await fetch(`/api/dashboard/services/${encodeURIComponent(serviceId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          showToast(`"${name}" atualizado! (${formatDurationHuman(durationMinutes)} • R$ ${formatCurrencyBR(price)})`);
+          fetchCatalogServices();
+        } else {
+          showToast(result.error || 'Erro ao salvar procedimento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao salvar procedimento.', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>💾 Salvar Alterações</span>`;
+        }
+      }
+    }
+
+    function openNewServiceModal() {
+      document.getElementById('newSvcName').value = '';
+      document.getElementById('newSvcPrice').value = '';
+      document.getElementById('newSvcDuration').value = '60';
+      document.getElementById('newSvcBadge').value = '';
+      document.getElementById('newSvcDescription').value = '';
+      const modal = document.getElementById('newServiceModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeNewServiceModal() {
+      const modal = document.getElementById('newServiceModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function submitNewService() {
+      const name = document.getElementById('newSvcName').value.trim();
+      const category = document.getElementById('newSvcCategory').value;
+      const price = Number(document.getElementById('newSvcPrice').value);
+      const durationMinutes = Number(document.getElementById('newSvcDuration').value) || 60;
+      const badge = document.getElementById('newSvcBadge').value.trim();
+      const description = document.getElementById('newSvcDescription').value.trim();
+
+      if (!name) {
+        showToast('Informe o nome do novo procedimento.', 'error');
+        return;
+      }
+      if (isNaN(price) || price <= 0) {
+        showToast('Informe o valor (R$) do procedimento.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitNewService');
+      btn.disabled = true;
+      btn.innerHTML = `<span>Cadastrando...</span>`;
+
+      try {
+        const res = await fetch('/api/dashboard/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            category,
+            price,
+            durationMinutes,
+            badge: badge || '✨ Novo',
+            description
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(`Procedimento "${name}" adicionado ao catálogo!`);
+          closeNewServiceModal();
+          fetchCatalogServices();
+        } else {
+          showToast(result.error || 'Erro ao adicionar procedimento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de comunicação com o servidor.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>✅ Cadastrar Procedimento</span>`;
+      }
+    }
+
+    async function deleteServiceItem(serviceId, serviceName) {
+      if (!confirm(`Tem certeza que deseja remover "${serviceName}" do catálogo de procedimentos?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/dashboard/services/${encodeURIComponent(serviceId)}`, {
+          method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.success) {
+          showToast(`Procedimento "${serviceName}" removido com sucesso.`);
+          fetchCatalogServices();
+        } else {
+          showToast(result.error || 'Erro ao remover procedimento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro ao remover procedimento.', 'error');
+      }
+    }
+
+    // =========================================================================
+    // FUNÇÕES DE AGENDAMENTOS & SINAIS (ABA 1)
+    // =========================================================================
     function getWeekRange(offsetWeeks = 0) {
       const now = new Date();
       now.setDate(now.getDate() + (offsetWeeks * 7));
@@ -1094,8 +1686,14 @@
       }
     }
 
+    // Inicializa carregando agendamentos e contagem do catálogo
     fetchDashboardData();
-    setInterval(fetchDashboardData, 30000);
+    fetchCatalogServices();
+    setInterval(() => {
+      if (currentDashboardTab === 'APPOINTMENTS') {
+        fetchDashboardData();
+      }
+    }, 30000);
   </script>
 </body>
 </html>

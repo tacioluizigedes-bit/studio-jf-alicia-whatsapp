@@ -145,14 +145,6 @@ function resolveServiceDuration(serviceId?: string): { durationMinutes: number; 
     return { durationMinutes: 60, serviceName: 'Procedimento Studio JF' };
   }
 
-  const publicFound = PUBLIC_BOOKING_SERVICES.find((s) => s.id === serviceId);
-  if (publicFound) {
-    return {
-      durationMinutes: publicFound.durationMinutes,
-      serviceName: publicFound.name.replace('deExtensão', 'de Extensão'),
-    };
-  }
-
   const dynamicFound = serviceCatalogService.findService(serviceId);
   if (dynamicFound) {
     return {
@@ -166,6 +158,14 @@ function resolveServiceDuration(serviceId?: string): { durationMinutes: number; 
     return {
       durationMinutes: configFound.durationMinutes || inferAppointmentDurationMinutes(configFound.name),
       serviceName: configFound.name,
+    };
+  }
+
+  const publicFound = PUBLIC_BOOKING_SERVICES.find((s) => s.id === serviceId);
+  if (publicFound) {
+    return {
+      durationMinutes: publicFound.durationMinutes,
+      serviceName: publicFound.name.replace('deExtensão', 'de Extensão'),
     };
   }
 

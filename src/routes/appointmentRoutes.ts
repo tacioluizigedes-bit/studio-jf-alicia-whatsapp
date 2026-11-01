@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import { triggerWeeklyReportNow } from '../jobs/weeklyReportJob';
 import { process24hReminders } from '../jobs/reminderJob';
 import { buildWeeklyReportMessage } from '../services/notificationService';
+import { serviceCatalogService } from '../services/serviceCatalogService';
 
 export const appointmentRouter = Router();
 const appointmentService = new AppointmentService();
@@ -259,6 +260,157 @@ appointmentRouter.get('/weekly-owner-report-preview', async (req: Request, res: 
       success: false,
       error: 'Erro ao gerar prévia do relatório semanal.',
       message: error?.message,
+    });
+  }
+});
+
+/**
+ * ============================================================================
+ * GESTÃO DO CATÁLOGO DE PROCEDIMENTOS PELO DASHBOARD DA JANAÍNA
+ * ============================================================================
+ */
+
+/**
+ * GET /api/dashboard/services (ou /api/appointments/services)
+ * Lista todos os procedimentos cadastrados com duração, valores e status promocional.
+ */
+appointmentRouter.get('/services', (_req: Request, res: Response) => {
+  try {
+    const services = serviceCatalogService.getAllServices();
+    const publicServices = serviceCatalogService.getPublicBookingServices();
+    return res.json({
+      success: true,
+      services,
+      publicServices,
+    });
+  } catch (error: any) {
+    console.error('Erro ao listar procedimentos no dashboard:', error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro ao carregar procedimentos.',
+    });
+  }
+});
+
+/**
+ * POST /api/dashboard/services
+ * Cadastra um novo procedimento no catálogo.
+ */
+appointmentRouter.post('/services', (req: Request, res: Response) => {
+  try {
+    const { name, price, durationMinutes, category, description, badge, isPromotional, originalPrice } = req.body || {};
+    if (!name || price === undefined || isNaN(Number(price))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nome e valor do procedimento são obrigatórios.',
+      });
+    }
+
+    const result = serviceCatalogService.addCustomService({
+      name: String(name),
+      price: Number(price),
+      durationMinutes: durationMinutes ? Number(durationMinutes) : 60,
+      category: category ? String(category) : undefined,
+      description: description ? String(description) : undefined,
+      badge: badge ? String(badge) : undefined,
+      isPromotional: !!isPromotional,
+      originalPrice: originalPrice ? Number(originalPrice) : undefined,
+    });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.message || 'Não foi possível adicionar o procedimento.',
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Procedimento cadastrado com sucesso!',
+      service: result.service,
+      services: serviceCatalogService.getAllServices(),
+    });
+  } catch (error: any) {
+    console.error('Erro ao criar procedimento no dashboard:', error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro interno ao cadastrar procedimento.',
+    });
+  }
+});
+
+/**
+ * PUT / PATCH /api/dashboard/services/:id
+ * Atualiza tempo de execução, valor, nome, categoria, promoção ou descrição de um procedimento.
+ */
+const handleUpdateService = (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, price, durationMinutes, category, description, isPromotional, originalPrice, badge } = req.body || {};
+
+    const result = serviceCatalogService.updateServiceFull(id, {
+      name,
+      price: price !== undefined ? Number(price) : undefined,
+      durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
+      category,
+      description,
+      isPromotional: typeof isPromotional === 'boolean' ? isPromotional : undefined,
+      originalPrice: originalPrice !== undefined ? Number(originalPrice) : undefined,
+      badge,
+    });
+
+    if (!result.success) {
+      return res.status(404).json({
+        success: false,
+        error: result.message || 'Procedimento não encontrado.',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Procedimento "${result.service?.name}" atualizado com sucesso!`,
+      service: result.service,
+      services: serviceCatalogService.getAllServices(),
+    });
+  } catch (error: any) {
+    console.error(`Erro ao atualizar procedimento ${req.params.id}:`, error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro interno ao atualizar procedimento.',
+    });
+  }
+};
+
+appointmentRouter.put('/services/:id', handleUpdateService);
+appointmentRouter.patch('/services/:id', handleUpdateService);
+
+/**
+ * DELETE /api/dashboard/services/:id
+ * Remove um procedimento do catálogo.
+ */
+appointmentRouter.delete('/services/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = serviceCatalogService.deleteService(id);
+
+    if (!result.success) {
+      return res.status(404).json({
+        success: false,
+        error: result.message || 'Procedimento não encontrado.',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Procedimento "${result.deletedService?.name}" removido com sucesso!`,
+      deletedService: result.deletedService,
+      services: serviceCatalogService.getAllServices(),
+    });
+  } catch (error: any) {
+    console.error(`Erro ao remover procedimento ${req.params.id}:`, error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro interno ao remover procedimento.',
     });
   }
 });
