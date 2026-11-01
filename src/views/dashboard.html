@@ -69,21 +69,21 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-0 sm:h-16 flex flex-col justify-center">
       <div class="flex items-center justify-between gap-2">
         <!-- Marca & Status -->
-        <div class="flex items-center gap-2.5 min-w-0">
+        <div class="flex items-center gap-2.5 flex-1 min-w-0">
           <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center font-extrabold text-white text-sm sm:text-lg shadow-lg shadow-pink-500/20">
             JF
           </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5 flex-wrap">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 flex-nowrap">
               <h1 class="text-sm sm:text-base font-bold text-white tracking-wide truncate">Studio JF Designer</h1>
-              <span class="text-[10px] sm:text-xs bg-pink-500/10 text-pink-400 font-semibold px-2 py-0.5 rounded-full border border-pink-500/20 shrink-0">
+              <span class="hidden xs:inline-block text-[10px] sm:text-xs bg-pink-500/10 text-pink-400 font-semibold px-2 py-0.5 rounded-full border border-pink-500/20 shrink-0">
                 Gestão Operacional
               </span>
             </div>
-            <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 truncate">
+            <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 truncate mt-0.5">
               <span class="truncate">Atendente: <strong class="text-pink-300">Alícia</strong></span>
-              <span class="hidden xs:inline text-slate-600">•</span>
-              <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400">
+              <span class="text-slate-600">•</span>
+              <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400 shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span id="lastUpdatedMobile" class="font-mono text-slate-300 md:hidden">--:--</span>
               </span>
@@ -91,8 +91,8 @@
           </div>
         </div>
 
-        <!-- Ações Rápidas (Compactas no Mobile + Menu Drawer / Completas no Desktop) -->
-        <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <!-- Ações Rápidas (Apenas Atualizar + Menu no Celular / Completas no Desktop) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <!-- Indicador de sincronização Desktop -->
           <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400 bg-dark-700 px-3 py-1.5 rounded-lg border border-dark-600">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -100,38 +100,38 @@
             <span id="lastUpdated" class="font-mono text-slate-200">--:--:--</span>
           </div>
 
-          <!-- Botão Atualizar -->
-          <button onclick="refreshActiveTab()" title="Recarregar dados" aria-label="Atualizar dados" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center gap-1.5 text-xs font-medium">
+          <!-- Botão Atualizar (Visível no Mobile e Desktop) -->
+          <button onclick="refreshActiveTab()" title="Recarregar dados" aria-label="Atualizar dados" class="h-10 w-10 md:h-auto md:w-auto p-2 md:px-3 md:py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center gap-1.5 text-xs font-medium">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             <span class="hidden md:inline">Atualizar</span>
           </button>
 
-          <!-- Botão Atalho Aba Procedimentos -->
-          <button onclick="switchDashboardTab('CATALOG')" title="Gerenciar Procedimentos, Tempos e Valores" aria-label="Gerenciar Procedimentos" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 active:scale-95 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <!-- Botão Atalho Aba Procedimentos (Oculto no celular pois já tem a aba logo abaixo e no menu) -->
+          <button onclick="switchDashboardTab('CATALOG')" title="Gerenciar Procedimentos, Tempos e Valores" aria-label="Gerenciar Procedimentos" class="hidden md:flex px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 active:scale-95 text-purple-300 border border-purple-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">💅</span>
-            <span class="hidden md:inline">Procedimentos & Valores</span>
+            <span class="hidden lg:inline">Procedimentos & Valores</span>
           </button>
 
-          <!-- Botão Resumo Semanal Janaína -->
-          <button onclick="openWeeklyReportModal()" title="Resumo Semanal da Janaína via WhatsApp" aria-label="Resumo Semanal Janaína" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 active:scale-95 text-pink-400 border border-pink-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <!-- Botão Resumo Semanal Janaína (Desktop/Tablet) -->
+          <button onclick="openWeeklyReportModal()" title="Resumo Semanal da Janaína via WhatsApp" aria-label="Resumo Semanal Janaína" class="hidden md:flex px-3 py-2 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 active:scale-95 text-pink-400 border border-pink-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">📊</span>
-            <span class="hidden md:inline">Resumo Semanal</span>
+            <span class="hidden lg:inline">Resumo Semanal</span>
           </button>
 
-          <!-- Botão Página de Agendamento da Cliente -->
-          <a href="/agendar" target="_blank" title="Abrir Página de Seleção de Horários da Cliente" aria-label="Agendamento Online" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <!-- Botão Página de Agendamento da Cliente (Desktop/Tablet) -->
+          <a href="/agendar" target="_blank" title="Abrir Página de Seleção de Horários da Cliente" aria-label="Agendamento Online" class="hidden md:flex px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">🗓️</span>
-            <span class="hidden sm:inline">Agendar Online</span>
+            <span>Agendar Online</span>
           </a>
 
-          <!-- Botão Abrir Chat Alícia -->
-          <a href="/" target="_blank" title="Abrir Simulador Chat Alícia" aria-label="Abrir Chat Alícia" class="min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 p-2 sm:px-3 sm:py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 active:scale-95 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <!-- Botão Abrir Chat Alícia (Desktop/Tablet) -->
+          <a href="/" target="_blank" title="Abrir Simulador Chat Alícia" aria-label="Abrir Chat Alícia" class="hidden md:flex px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 active:scale-95 text-emerald-400 border border-emerald-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
-            <span class="hidden sm:inline">Chat Alícia</span>
+            <span>Chat Alícia</span>
           </a>
 
           <!-- Botão Menu Colapsável Mobile (Atalhos com Rótulos) -->
-          <button onclick="toggleMobileMenu()" title="Menu de Atalhos" aria-label="Abrir menu de atalhos" class="md:hidden min-h-[40px] min-w-[40px] p-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 border border-dark-600 flex items-center justify-center">
+          <button onclick="toggleMobileMenu()" title="Menu de Atalhos" aria-label="Abrir menu de atalhos" class="md:hidden h-10 w-10 p-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-300 border border-dark-600 flex items-center justify-center">
             <svg id="mobileMenuIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
           </button>
         </div>
@@ -140,9 +140,13 @@
       <!-- Menu Colapsável Mobile (Drawer/Dropdown) -->
       <div id="mobileActionDrawer" class="hidden md:hidden mt-2.5 pt-2.5 border-t border-dark-600 grid grid-cols-1 gap-2">
         <button onclick="switchDashboardTab('CATALOG'); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-purple-600/15 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-between">
-          <span class="flex items-center gap-2"><span>💅</span> Editar Procedimentos, Tempos e Valores</span>
+          <span class="flex items-center gap-2"><span>💅</span> Procedimentos, Tempos e Valores</span>
           <span>➔</span>
         </button>
+        <a href="/agendar" target="_blank" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>🗓️</span> Abrir Agendamento Online (/agendar)</span>
+          <span>↗</span>
+        </a>
         <button onclick="openWeeklyReportModal(); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-600/15 text-pink-300 border border-pink-500/30 text-xs font-semibold flex items-center justify-between">
           <span class="flex items-center gap-2"><span>📊</span> Resumo Semanal da Janaína</span>
           <span>➔</span>
