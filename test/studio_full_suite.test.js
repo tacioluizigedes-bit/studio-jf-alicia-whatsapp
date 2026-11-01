@@ -9,12 +9,12 @@ const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
 const { DateTime } = require('luxon');
 
-// Importações dos serviços (ajuste os caminhos conforme sua árvore de pastas)
-const { resolveSenderRole, CONFIG } = require('../src/config/phoneRoutingService');
-const { isSlotBlockedByPersonalRules } = require('../src/services/scheduleRulesService');
-const { processClientBookingRules, checkReschedulePolicy } = require('../src/services/clientFlowService');
-const { checkSessionActivity } = require('../src/services/sessionManager');
-const { handleOwnerCommands } = require('../src/services/ownerControlService');
+// Importações dos serviços (compilados em dist/)
+const { resolveSenderRole, CONFIG } = require('../dist/config/phoneRoutingService');
+const { isSlotBlockedByPersonalRules } = require('../dist/services/scheduleRulesService');
+const { processClientBookingRules, checkReschedulePolicy } = require('../dist/services/clientFlowService');
+const { checkSessionActivity } = require('../dist/services/sessionManager');
+const { handleOwnerCommands } = require('../dist/services/ownerControlService');
 const { inferAppointmentDurationMinutes, AppointmentService } = require('../dist/services/appointmentService');
 const { extractBookingEntities } = require('../dist/services/nlpEntityExtractor');
 const { prisma } = require('../dist/lib/prisma');
