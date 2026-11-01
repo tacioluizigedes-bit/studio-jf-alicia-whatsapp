@@ -391,7 +391,10 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
           const isOwner =
             senderRole === 'OWNER' ||
             fromNumber === normalizePhoneDigits(OWNER_PERSONAL_NUMBER) ||
-            fromNumber.endsWith('21993826303');
+            fromNumber.endsWith('21993826303') ||
+            fromNumber.endsWith('2193826303') ||
+            fromNumber.endsWith('993826303') ||
+            fromNumber.endsWith('93826303');
 
           if (isOwner) {
             console.log(`👑 [Rota A - Janaína/Admin] Comando recebido de ${fromNumber}: "${messageBody}"`);

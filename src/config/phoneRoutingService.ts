@@ -19,7 +19,7 @@ export function normalizePhoneDigits(phone?: string | null): string {
 
 /**
  * Resolve o papel do remetente com base no número de origem:
- * - '5521993826303' / '21993826303' -> 'OWNER' (Janaína Ferreira)
+ * - '5521993826303' / '21993826303' / '552193826303' (com ou sem 9º dígito do WhatsApp) -> 'OWNER' (Janaína Ferreira)
  * - Qualquer outro número externo -> 'CLIENT'
  */
 export function resolveSenderRole(phone?: string | null): 'OWNER' | 'CLIENT' {
@@ -30,7 +30,12 @@ export function resolveSenderRole(phone?: string | null): 'OWNER' | 'CLIENT' {
   if (
     clean === ownerClean ||
     clean === '21993826303' ||
-    clean.endsWith('21993826303')
+    clean === '2193826303' ||
+    clean === '552193826303' ||
+    clean.endsWith('21993826303') ||
+    clean.endsWith('2193826303') ||
+    clean.endsWith('993826303') ||
+    clean.endsWith('93826303')
   ) {
     return 'OWNER';
   }

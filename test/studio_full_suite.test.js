@@ -28,6 +28,9 @@ describe('--- BATERIA DE TESTES STUDIO JF DESIGNER ---', () => {
     test('Deve identificar o número 21993826303 como OWNER (Janaína)', () => {
       const role = resolveSenderRole('5521993826303');
       assert.equal(role, 'OWNER', 'O número 21993826303 deve ter papel de OWNER');
+      assert.equal(resolveSenderRole('21993826303'), 'OWNER');
+      assert.equal(resolveSenderRole('552193826303'), 'OWNER', 'Suporte a JID sem 9º dígito');
+      assert.equal(resolveSenderRole('2193826303'), 'OWNER', 'Suporte a DDD+número sem 9º dígito');
     });
 
     test('Deve identificar números desconhecidos como CLIENT', () => {
