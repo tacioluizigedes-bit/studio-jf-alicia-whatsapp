@@ -9,12 +9,22 @@
 import { DateTime } from 'luxon';
 import { SALON_CONFIG } from '../config/salonConfig';
 
+export interface ExtractedSubService {
+  id: string;
+  name: string;
+  price: number;
+  durationMinutes: number;
+  category?: string;
+}
+
 export interface ExtractedService {
   id: string;
   name: string;
   price: number;
   durationMinutes: number;
   category: string;
+  isCombo?: boolean;
+  subServices?: ExtractedSubService[];
 }
 
 export interface ExtractedBookingEntities {
@@ -53,145 +63,339 @@ const NUMERIC_LASH_MAP: Record<string, string> = {
 };
 
 /**
- * 1. Extração de Serviço / Procedimento
+ * 1. Extração de Todos os Procedimentos Individuais (Multi-Serviços / Combos)
  */
-export function extractService(text: string, currentStep?: string): ExtractedService | undefined {
+export function extractAllServices(text: string, currentStep?: string): ExtractedService[] {
   const norm = normalizeText(text);
+  const foundServices: ExtractedService[] = [];
 
-  // Seleção por número no menu de cílios ("1", "opcao 1", "quero a 1")
+  const getFromConfig = (id: string): ExtractedService | undefined => {
+    const s = SALON_CONFIG.services.find((item: any) => item.id === id);
+    if (!s) return undefined;
+    return {
+      id: s.id,
+      name: s.name,
+      price: s.price,
+      durationMinutes: s.durationMinutes,
+      category: s.category,
+    };
+  };
+
+  // 1.1 Seleção numérica direta no menu de cílios
   const singleNumberMatch = norm.match(/\b([1-5])\b/);
   if (singleNumberMatch && (currentStep === 'SERVICE_SELECTION' || norm.includes('opcao') || norm.length <= 3)) {
     const serviceId = NUMERIC_LASH_MAP[singleNumberMatch[1]];
     if (serviceId) {
-      const found = SALON_CONFIG.services.find((s) => s.id === serviceId);
-      if (found) {
-        return {
-          id: found.id,
-          name: found.name,
-          price: found.price,
-          durationMinutes: found.durationMinutes,
-          category: found.category,
-        };
+      const s = getFromConfig(serviceId);
+      if (s) foundServices.push(s);
+    }
+  }
+
+  // 1.2 Procedimento de Cílios (Colocação ou Manutenção)
+  const hasLashKeyword =
+    norm.includes('cilios') ||
+    norm.includes('cilio') ||
+    norm.includes('extensao') ||
+    norm.includes('alongamento') ||
+    norm.includes('tufinho') ||
+    norm.includes('tufinhos') ||
+    norm.includes('volume') ||
+    norm.includes('fio a fio') ||
+    norm.includes('egipcio') ||
+    norm.includes('fox') ||
+    norm.includes('mega') ||
+    norm.includes('brasileiro') ||
+    norm.includes('brasileirinho');
+
+  if (hasLashKeyword && foundServices.length === 0) {
+    const isManut = norm.includes('manut') || norm.includes('manutencao');
+
+    if (isManut) {
+      if (norm.includes('mega') && norm.includes('brasileiro')) {
+        const s = getFromConfig('manut_cilios_mega_brasileiro');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('brasileiro') || norm.includes('brasileirinho')) {
+        const s = getFromConfig('manut_cilios_volume_brasileiro');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('fio a fio') || norm.includes('classico')) {
+        const s = getFromConfig('manut_cilios_fio_a_fio_classico');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('egipcio')) {
+        const s = getFromConfig('manut_cilios_volume_egipcio');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('fox')) {
+        const s = getFromConfig('manut_cilios_volume_fox_eyes');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('mega') && norm.includes('tufinho')) {
+        const s = getFromConfig('manut_cilios_tufinhos_mega');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('tufinho')) {
+        const s = getFromConfig('manut_cilios_tufinhos_light');
+        if (s) foundServices.push(s);
+      } else {
+        const s = getFromConfig('manut_cilios_volume_brasileiro') || getFromConfig('manut_cilios_tufinhos_light');
+        if (s) foundServices.push(s);
+      }
+    } else {
+      if (norm.includes('mega') && norm.includes('brasileiro')) {
+        const s = getFromConfig('cilios_mega_brasileiro');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('mega') && norm.includes('tufinho')) {
+        const s = getFromConfig('cilios_tufinhos_mega');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('tufinho') || norm.includes('tufinhos')) {
+        const s = getFromConfig('cilios_tufinhos_light');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('volume brasileiro') || norm.includes('brasileiro') || norm.includes('brasileirinho')) {
+        const s = getFromConfig('cilios_volume_brasileiro');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('fio a fio') || norm.includes('classico')) {
+        const s = getFromConfig('cilios_fio_a_fio_classico');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('egipcio')) {
+        const s = getFromConfig('cilios_volume_egipcio');
+        if (s) foundServices.push(s);
+      } else if (norm.includes('fox')) {
+        const s = getFromConfig('cilios_volume_fox_eyes');
+        if (s) foundServices.push(s);
+      } else {
+        const s = getFromConfig('cilios_volume_brasileiro') || getFromConfig('cilios_tufinhos_light');
+        if (s) foundServices.push(s);
       }
     }
   }
 
-  // Manutenção (Avaliado ANTES de colocação para não confundir "manutenção de volume brasileiro" com colocação)
-  if (norm.includes('manutencao') || norm.includes('manutencao de cilios')) {
-    if (norm.includes('mega') && norm.includes('brasileiro')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_mega_brasileiro');
-      if (found) return found as any;
-    }
-    if (norm.includes('brasileiro') || norm.includes('brasileirinho')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_volume_brasileiro');
-      if (found) return found as any;
-    }
-    if (norm.includes('fio a fio') || norm.includes('classico')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_fio_a_fio_classico');
-      if (found) return found as any;
-    }
-    if (norm.includes('egipcio')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_volume_egipcio');
-      if (found) return found as any;
-    }
-    if (norm.includes('fox')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_volume_fox_eyes');
-      if (found) return found as any;
-    }
-    if (norm.includes('mega') && norm.includes('tufinho')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_tufinhos_mega');
-      if (found) return found as any;
-    }
-    const found = SALON_CONFIG.services.find((s) => s.id === 'manut_cilios_tufinhos_light');
-    if (found) return found as any;
-  }
-
-  // Tufinho / Tufinhos de Seda
-  if (norm.includes('tufinho') || norm.includes('tufinhos') || norm.includes('tufinho de seda')) {
-    if (norm.includes('mega')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_tufinhos_mega');
-      if (found) return found as any;
-    }
-    const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_tufinhos_light');
-    if (found) return found as any;
-  }
-
-  // Volume Brasileiro
-  if (norm.includes('volume brasileiro') || norm.includes('brasileiro') || norm.includes('brasileirinho')) {
-    if (norm.includes('mega')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_mega_brasileiro');
-      if (found) return found as any;
-    }
-    const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_volume_brasileiro');
-    if (found) return found as any;
-  }
-
-  // Fio a Fio Clássico
-  if (norm.includes('fio a fio') || norm.includes('classico')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_fio_a_fio_classico');
-    if (found) return found as any;
-  }
-
-  // Volume Egípcio
-  if (norm.includes('egipcio')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_volume_egipcio');
-    if (found) return found as any;
-  }
-
-  // Fox Eyes
-  if (norm.includes('fox eyes') || norm.includes('fox')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'cilios_volume_fox_eyes');
-    if (found) return found as any;
-  }
-
-  // Sobrancelha com Henna
+  // 1.3 Sobrancelhas (Design com Henna ou Design Simples)
   if (norm.includes('henna')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'design_sobrancelha_henna');
-    if (found) return found as any;
+    const s = getFromConfig('design_sobrancelha_henna');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  } else if (norm.includes('sobrancelha') || norm.includes('sobrancelhas') || norm.includes('design')) {
+    const s = getFromConfig('design_sobrancelha_simples');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
   }
 
-  // Design de Sobrancelha
-  if (norm.includes('sobrancelha') || norm.includes('design de sobrancelha')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'design_sobrancelha_simples');
-    if (found) return found as any;
+  // 1.4 Estética Facial (Limpeza de Pele)
+  if (norm.includes('limpeza de pele') || norm.includes('limpeza facial') || norm.includes('limpeza') || norm.includes('pele profunda')) {
+    const s = getFromConfig('limpeza_de_pele') || {
+      id: 'limpeza_de_pele',
+      name: 'Limpeza de Pele Profunda',
+      price: 120,
+      durationMinutes: 120,
+      category: 'estetica_facial',
+    };
+    if (!foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
   }
 
-  // Depilação - Combo Axila + Virilha
-  if (norm.includes('axila') && (norm.includes('virilha') || norm.includes('virilia'))) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'combo_dep_axila_virilha');
-    if (found) return found as any;
+  // 1.5 Depilação (Detecção precisa de cada região solicitada)
+  // Axila
+  if (norm.includes('axila') || norm.includes('axilas')) {
+    const s = getFromConfig('dep_axila');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  // Virilha
+  if (norm.includes('virilha') || norm.includes('virilia')) {
+    if (norm.includes('total') || norm.includes('completa')) {
+      const s = getFromConfig('dep_virilha_total');
+      if (s && !foundServices.some(item => item.id === s.id)) {
+        foundServices.push(s);
+      }
+    } else {
+      const s = getFromConfig('dep_virilha_simples');
+      if (s && !foundServices.some(item => item.id === s.id)) {
+        foundServices.push(s);
+      }
+    }
+  }
+
+  // Buço
+  if (norm.includes('buco') || norm.includes('buço')) {
+    const s = getFromConfig('dep_buco');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  // Meia Perna
+  if (norm.includes('meia perna') || norm.includes('1/2 perna')) {
+    const s = getFromConfig('dep_meia_perna');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  } else if (norm.includes('perna inteira') || norm.includes('perna completa') || (norm.includes('perna') && !norm.includes('meia'))) {
+    const s = getFromConfig('dep_perna_inteira');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  // Faixa do umbigo
+  if (norm.includes('umbigo')) {
+    const s = getFromConfig('dep_faixa_umbigo');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  // Mento / Queixo
+  if (norm.includes('mento') || norm.includes('queixo')) {
+    const s = getFromConfig('dep_mento');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  // Rosto Completo
+  if (norm.includes('rosto completo') || (norm.includes('rosto') && !norm.includes('sobrancelha') && !norm.includes('pele'))) {
+    const s = getFromConfig('dep_rosto_completo');
+    if (s && !foundServices.some(item => item.id === s.id)) {
+      foundServices.push(s);
+    }
+  }
+
+  return foundServices;
+}
+
+/**
+ * Extração de Serviço / Procedimento:
+ * - Se for 1 procedimento: retorna o serviço individual.
+ * - Se for 2 ou mais procedimentos: soma preços e horários, identifica cada procedimento e monta o Combo!
+ */
+export function extractService(text: string, currentStep?: string): ExtractedService | undefined {
+  const services = extractAllServices(text, currentStep);
+
+  if (services.length === 0) {
+    return undefined;
+  }
+
+  if (services.length === 1) {
+    return services[0];
+  }
+
+  // Múltiplos procedimentos identificados: verifica se há combo pré-cadastrado no catálogo
+  const ids = services.map(s => s.id);
+
+  // 1. Depilação: Axila + Virilha (Simples ou Total)
+  if (ids.includes('dep_axila') && (ids.includes('dep_virilha_simples') || ids.includes('dep_virilha_total')) && services.length === 2) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_dep_axila_virilha');
     return {
-      id: 'combo_dep_axila_virilha',
-      name: 'Combo Depilação: Axila + Virilha',
-      price: 65.00,
-      durationMinutes: 60,
+      id: catalogCombo?.id || 'combo_dep_axila_virilha',
+      name: catalogCombo?.name || 'Combo Depilação: Axila + Virilha',
+      price: catalogCombo?.price ?? 65.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 60,
       category: 'combos_depilacao',
+      isCombo: true,
+      subServices: services,
     };
   }
 
-  // Depilação - Virilha Avulsa
-  if (norm.includes('virilha') || norm.includes('virilia')) {
-    if (norm.includes('total') || norm.includes('completa')) {
-      const found = SALON_CONFIG.services.find((s) => s.id === 'dep_virilha_total');
-      if (found) return found as any;
-    }
-    const found = SALON_CONFIG.services.find((s) => s.id === 'dep_virilha_simples');
-    if (found) return found as any;
+  // 2. Depilação: Buço + Axila
+  if (ids.includes('dep_buco') && ids.includes('dep_axila') && services.length === 2) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_dep_buco_axila');
+    return {
+      id: catalogCombo?.id || 'combo_dep_buco_axila',
+      name: catalogCombo?.name || 'Combo Depilação: Buço + Axila',
+      price: catalogCombo?.price ?? 30.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 45,
+      category: 'combos_depilacao',
+      isCombo: true,
+      subServices: services,
+    };
   }
 
-  // Depilação - Axila Avulsa
-  if (norm.includes('axila') || norm.includes('axilas')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'dep_axila');
-    if (found) return found as any;
+  // 3. Depilação: Buço + Axila + Meia Perna
+  if (ids.includes('dep_buco') && ids.includes('dep_axila') && ids.includes('dep_meia_perna') && services.length === 3) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_dep_buco_axila_meia_perna');
+    return {
+      id: catalogCombo?.id || 'combo_dep_buco_axila_meia_perna',
+      name: catalogCombo?.name || 'Combo Depilação: Buço + Axila + Meia Perna',
+      price: catalogCombo?.price ?? 55.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 75,
+      category: 'combos_depilacao',
+      isCombo: true,
+      subServices: services,
+    };
   }
 
-  // Depilação - Combos com buço
-  if (norm.includes('buco') && norm.includes('axila')) {
-    const found = SALON_CONFIG.services.find((s) => s.id === 'combo_dep_buco_axila');
-    if (found) return found as any;
+  // 4. Depilação: Buço + Axila + Perna Completa
+  if (ids.includes('dep_buco') && ids.includes('dep_axila') && ids.includes('dep_perna_inteira') && services.length === 3) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_dep_buco_axila_perna_completa');
+    return {
+      id: catalogCombo?.id || 'combo_dep_buco_axila_perna_completa',
+      name: catalogCombo?.name || 'Combo Depilação: Buço + Axila + Perna Completa',
+      price: catalogCombo?.price ?? 60.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 90,
+      category: 'combos_depilacao',
+      isCombo: true,
+      subServices: services,
+    };
   }
 
-  return undefined;
+  // 5. Depilação: Buço + Axila + Virilha Total
+  if (ids.includes('dep_buco') && ids.includes('dep_axila') && ids.includes('dep_virilha_total') && services.length === 3) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_dep_buco_axila_virilha_total');
+    return {
+      id: catalogCombo?.id || 'combo_dep_buco_axila_virilha_total',
+      name: catalogCombo?.name || 'Combo Depilação: Buço + Axila + Virilha Total',
+      price: catalogCombo?.price ?? 70.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 90,
+      category: 'combos_depilacao',
+      isCombo: true,
+      subServices: services,
+    };
+  }
+
+  // 6. Manutenção de Cílios + Henna
+  if (services.some(s => s.id.startsWith('manut_cilios')) && ids.includes('design_sobrancelha_henna') && services.length === 2) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_henna_manut_cilios');
+    return {
+      id: catalogCombo?.id || 'combo_henna_manut_cilios',
+      name: catalogCombo?.name || 'Combo Henna + Manutenção de Cílios',
+      price: catalogCombo?.price ?? 95.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 120,
+      category: 'sobrancelhas',
+      isCombo: true,
+      subServices: services,
+    };
+  }
+
+  // 7. Manutenção de Cílios + Design Simples
+  if (services.some(s => s.id.startsWith('manut_cilios')) && ids.includes('design_sobrancelha_simples') && services.length === 2) {
+    const catalogCombo = SALON_CONFIG.services.find((s: any) => s.id === 'combo_manut_cilios_design_sobrancelha');
+    return {
+      id: catalogCombo?.id || 'combo_manut_cilios_design_sobrancelha',
+      name: catalogCombo?.name || 'Combo Manutenção de Cílios + Design de Sobrancelha',
+      price: catalogCombo?.price ?? 85.0,
+      durationMinutes: catalogCombo?.durationMinutes ?? 120,
+      category: 'sobrancelhas',
+      isCombo: true,
+      subServices: services,
+    };
+  }
+
+  // 8. Combo Dinâmico Universal para qualquer outra combinação de múltiplos procedimentos
+  const totalPrice = services.reduce((acc, curr) => acc + curr.price, 0);
+  const totalDuration = services.reduce((acc, curr) => acc + curr.durationMinutes, 0);
+  const comboName = `Combo: ${services.map(s => s.name).join(' + ')}`;
+  const comboId = `combo_${services.map(s => s.id).join('_')}`;
+
+  return {
+    id: comboId,
+    name: comboName,
+    price: totalPrice,
+    durationMinutes: totalDuration,
+    category: 'combos_personalizados',
+    isCombo: true,
+    subServices: services,
+  };
 }
 
 /**
@@ -365,7 +569,7 @@ export function extractClientName(text: string): string | undefined {
   const trailingNameMatch = text.match(/(?:[.\n,]\s*|\b(?:para|cliente|nome)\s+)([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,2})\s*$/);
   if (trailingNameMatch && trailingNameMatch[1]) {
     const candidate = trailingNameMatch[1].trim();
-    const invalidWords = /^(hoje|amanha|amanhã|ontem|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|depilacao|depilação|cilios|cílios|sobrancelha|tufinho|axila|virilha|buco|buço|rosto|perna|henna|agendar|marcar|confirmar)$/i;
+    const invalidWords = /^(hoje|amanha|amanhã|ontem|segunda|terca|terça|quarta|quinta|sexta|sabado|sábado|domingo|depilacao|depilação|cilios|cílios|sobrancelha|tufinho|axila|virilha|buco|buço|rosto|perna|henna|agendar|marcar|confirmar|combo|pele|limpeza)$/i;
     if (candidate.length >= 2 && !invalidWords.test(candidate)) {
       return candidate;
     }
@@ -423,6 +627,7 @@ export function extractBookingEntities(
 export default {
   extractBookingEntities,
   extractService,
+  extractAllServices,
   extractDate,
   extractTime,
   extractClientName,

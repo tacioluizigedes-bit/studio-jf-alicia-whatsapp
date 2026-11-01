@@ -36,6 +36,20 @@ export interface PendingOwnerConfirmation {
 // Armazena confirmações pendentes da Janaína (ex: liberar horário bloqueado para marcar cliente)
 export const pendingOwnerConfirmations = new Map<string, PendingOwnerConfirmation>();
 
+export interface PendingLinkRequest {
+  clientPhone: string;
+  clientName: string;
+  serviceName: string;
+  depositAmount: number;
+  totalAmount: number;
+  appointmentId?: string;
+  dateStrFormatted?: string;
+  requestedAt: number;
+}
+
+export const pendingPaymentLinkRequests = new Map<string, PendingLinkRequest>();
+
+
 /**
  * Remove acentuação e normaliza texto para comparações em NLP
  */
@@ -281,6 +295,90 @@ export function isMultiDayOrStatusQuery(text: string, relativeType: string): boo
  * - handleOwnerCommands(text)
  * - handleOwnerCommands({ text, command, message, phone, ownerPhone, whatsappClient })
  */
+/**
+ * Encaminha link de pagamento enviado pela Janaína para a cliente correspondente
+ */
+export async function handleForwardPaymentLink(
+  whatsappClient: WhatsAppClientLike | null | undefined,
+  ownerPhone: string,
+  rawText: string,
+  paymentUrl: string
+): Promise<string> {
+  const nameMatch = rawText.match(/(?:cliente|para|da|do|de|link)\s+([A-ZÀ-Úa-zà-ú]+)/i);
+  let targetRequest: PendingLinkRequest | undefined;
+
+  if (nameMatch && nameMatch[1]) {
+    const searchName = nameMatch[1].toLowerCase();
+    for (const [phone, req] of pendingPaymentLinkRequests.entries()) {
+      if (req.clientName.toLowerCase().includes(searchName)) {
+        targetRequest = req;
+        break;
+      }
+    }
+  }
+
+  if (!targetRequest && pendingPaymentLinkRequests.size > 0) {
+    const entries = Array.from(pendingPaymentLinkRequests.values());
+    entries.sort((a, b) => b.requestedAt - a.requestedAt);
+    targetRequest = entries[0];
+  }
+
+  if (!targetRequest) {
+    const latestPending = await prisma.appointment.findFirst({
+      where: {
+        depositStatus: 'PENDING',
+        generalStatus: { not: 'CANCELLED' },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (latestPending) {
+      targetRequest = {
+        clientPhone: latestPending.whatsappPhone,
+        clientName: latestPending.clientName,
+        serviceName: latestPending.service,
+        depositAmount: Number(latestPending.depositAmount),
+        totalAmount: Number(latestPending.totalAmount),
+        appointmentId: latestPending.id,
+        requestedAt: Date.now(),
+      };
+    }
+  }
+
+  if (!targetRequest) {
+    const noReqMsg =
+      `Jana, identifiquei o link de pagamento (*${paymentUrl}*), mas não encontrei nenhuma cliente aguardando link no momento. 😅\n\n` +
+      `Se desejar enviar para uma cliente específica, me envie: *"Link da [Nome]: ${paymentUrl}"*! 💕`;
+    if (whatsappClient) {
+      await sendHumanizedMessage(whatsappClient, ownerPhone, noReqMsg, 3000);
+    }
+    return noReqMsg;
+  }
+
+  const depositStr = targetRequest.depositAmount.toFixed(2).replace('.', ',');
+  const clientMsg =
+    `Olá, *${targetRequest.clientName}*! 💳✨ A Janaína já gerou o seu link de pagamento para o sinal (R$ ${depositStr}) do seu agendamento de *${targetRequest.serviceName}*!\n\n` +
+    `🔗 *Acesse o link seguro para pagar no cartão:*\n${paymentUrl}\n\n` +
+    `✅ *Lembrando:* O valor do sinal será abatido integralmente no ato do seu procedimento.\n` +
+    `Assim que concluir o pagamento, por favor me envie o comprovante ou me dê um 'OK' por aqui para confirmarmos de vez a sua vaga na grade! 💕`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, targetRequest.clientPhone, clientMsg, 3500);
+  }
+
+  pendingPaymentLinkRequests.delete(targetRequest.clientPhone.replace(/\D/g, ''));
+
+  const confirmOwnerMsg =
+    `✅ *Link de Pagamento Enviado com Sucesso, Jana!* 💳✨\n\n` +
+    `Encaminhei o link diretamente para a cliente *${targetRequest.clientName}* (${targetRequest.clientPhone}).\n` +
+    `Assim que ela realizar o pagamento e enviar o comprovante, te aviso imediatamente aqui no canal pessoal para confirmação! 💕`;
+
+  if (whatsappClient) {
+    await sendHumanizedMessage(whatsappClient, ownerPhone, confirmOwnerMsg, 3500);
+  }
+  return confirmOwnerMsg;
+}
+
 export async function handleOwnerCommands(
   arg1: WhatsAppClientLike | string | { text?: string; command?: string; message?: string; phone?: string; ownerPhone?: string; whatsappClient?: WhatsAppClientLike },
   arg2?: string,
@@ -326,6 +424,13 @@ export async function handleOwnerCommands(
       }
       return { status: 'success', action: 'cancelled_owner_override', reply: cancelReply, message: cancelReply, response: cancelReply };
     }
+  }
+
+    // COMANDO 0.5: Envio de Link de Pagamento de Cartão da Janaína para a Cliente
+  const linkMatch = cleanText.match(/(https?:\/\/[^\s]+)/i);
+  if (linkMatch) {
+    const reply = await handleForwardPaymentLink(whatsappClient, ownerPhone, cleanText, linkMatch[1]);
+    return { status: 'success', action: 'forward_payment_link', reply, message: reply, response: reply };
   }
 
   // COMANDO 1: Montagem / Abertura de Grade Mensal (Prioridade Alta para Fluxo Administrativo)
@@ -1022,7 +1127,8 @@ export async function executePendingOwnerAction(
 
   // 2. Cria o agendamento confirmado diretamente por ordem da Janaína
   const deadline = new Date(Date.now() + 2 * 60 * 60 * 1000);
-  await prisma.appointment.create({
+
+    await prisma.appointment.create({
     data: {
       clientName: pending.clientName,
       whatsappPhone: sanitizeToE164(pending.clientPhone || '5521900000000'),
@@ -1232,6 +1338,19 @@ export async function handleOwnerDirectBooking(
 
   // 3. Se não estiver bloqueado nem em conflito, efetiva o agendamento diretamente na agenda
   const deadline = new Date(Date.now() + 2 * 60 * 60 * 1000);
+
+  let comboBreakdownText = '';
+  if (extractedSrv.subServices && extractedSrv.subServices.length > 1) {
+    comboBreakdownText =
+      `📋 *Procedimentos identificados (${extractedSrv.subServices.length} no combo):*\n` +
+      extractedSrv.subServices.map((s: any) => `  • ${s.name} (${formatDurationLabel(s.durationMinutes)} - R$ ${s.price.toFixed(2).replace('.', ',')})`).join('\n') +
+      `\n⏱️ *Tempo total somado:* ${durationLabel} | *Valor total:* R$ ${totalAmount.toFixed(2).replace('.', ',')}\n\n`;
+  }
+
+  const comboNotes = extractedSrv.subServices && extractedSrv.subServices.length > 1
+    ? `[Combo de ${extractedSrv.subServices.length} Procedimentos: ${extractedSrv.subServices.map((s: any) => `${s.name} (R$ ${s.price}, ${s.durationMinutes}min)`).join(' + ')} | Duração total: ${durationMinutes} min]`
+    : '[Agendado diretamente pela Janaína]';
+
   await prisma.appointment.create({
     data: {
       clientName,
@@ -1246,14 +1365,15 @@ export async function handleOwnerDirectBooking(
       confirmedAt: new Date(),
       confirmedBy: 'Janaína (Direto)',
       isFirstAppointment: false,
-      notes: '[Agendado diretamente pela Janaína]',
+      notes: comboNotes,
     },
   });
 
   const directBookedMsg =
     `✅ *Agendamento Realizado com Sucesso, Jana!* ✨\n\n` +
     `👤 *Cliente:* ${clientName}\n` +
-    `💅 *Procedimento:* ${serviceName} (${durationLabel} - R$ ${totalAmount.toFixed(2).replace('.', ',')})\n` +
+    `💅 *Procedimento:* ${serviceName}\n` +
+    comboBreakdownText +
     `🗓️ *Data e Horário:* ${formattedDateTime}\n` +
     `⏭️ *Próximo horário livre após ela:* ${endDt.toFormat('HH:mm')}\n\n` +
     `Já está registrado como *Confirmado* na sua agenda! 💕`;

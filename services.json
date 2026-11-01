@@ -340,6 +340,14 @@
       "price": 60,
       "durationMinutes": 60,
       "description": "Depilação de virilha total."
+    },
+    {
+      "id": "limpeza_de_pele",
+      "name": "Limpeza de Pele Profunda",
+      "category": "estetica_facial",
+      "price": 120,
+      "durationMinutes": 120,
+      "description": "Higienização profunda, esfoliação, extração e hidratação (2h00min)."
     }
   ]
 }

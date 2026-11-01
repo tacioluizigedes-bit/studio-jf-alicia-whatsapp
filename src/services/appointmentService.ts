@@ -142,6 +142,19 @@ export function inferAppointmentDurationMinutes(serviceName: string): number {
   const raw = (serviceName || '').trim();
   if (!raw) return 60;
 
+  // 1. Duração explícita anotada na string (ex: "(120 min)", "(2h)", "(1h30)")
+  const explicitMinMatch = raw.match(/\((\d+)\s*min\)/i);
+  if (explicitMinMatch) {
+    return parseInt(explicitMinMatch[1], 10);
+  }
+  const explicitHourMatch = raw.match(/\((\d+)h(\d*)\)/i);
+  if (explicitHourMatch) {
+    const h = parseInt(explicitHourMatch[1], 10);
+    const m = explicitHourMatch[2] ? parseInt(explicitHourMatch[2], 10) : 0;
+    return h * 60 + m;
+  }
+
+  // 2. Busca exata no catálogo oficial
   const exactMatch = SALON_CONFIG.services.find(
     (s: any) =>
       s.id.toLowerCase() === raw.toLowerCase() ||
@@ -151,6 +164,19 @@ export function inferAppointmentDurationMinutes(serviceName: string): number {
     return exactMatch.durationMinutes;
   }
 
+  // 3. Combo dinâmico composto (ex: "Combo: Colocação Cílios Volume Brasileiro + Design de Sobrancelha" ou "A + B")
+  if (raw.toLowerCase().startsWith('combo:') || (raw.includes('+') && !raw.includes('manut_cilios_volume_brasileiro'))) {
+    const cleaned = raw.replace(/^combo:\s*/i, '');
+    const parts = cleaned.split('+').map(p => p.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      let sumMinutes = 0;
+      for (const part of parts) {
+        sumMinutes += inferAppointmentDurationMinutes(part);
+      }
+      if (sumMinutes > 0) return sumMinutes;
+    }
+  }
+
   const norm = raw
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -158,6 +184,11 @@ export function inferAppointmentDurationMinutes(serviceName: string): number {
 
   // Combo Manutenção + Design ou Henna (1h30 + 30min = 2h)
   if (norm.includes('combo') && (norm.includes('manut') || norm.includes('cilios'))) {
+    return 120;
+  }
+
+  // Estética Facial - Limpeza de Pele Profunda -> 120 minutos (2h)
+  if (norm.includes('limpeza de pele') || norm.includes('limpeza facial') || norm.includes('pele profunda') || norm.includes('limpeza')) {
     return 120;
   }
 
@@ -192,12 +223,14 @@ export function inferAppointmentDurationMinutes(serviceName: string): number {
     return 90;
   }
 
-  // Depilações rápidas -> 30 minutos
-  if (norm.includes('buco') || norm.includes('mento') || norm.includes('umbigo')) {
-    if (!norm.includes('perna') && !norm.includes('virilha') && !norm.includes('axila')) {
-      return 30;
-    }
-  }
+  // Depilação unitária
+  if (norm.includes('virilha total') || norm.includes('virilha completa')) return 60;
+  if (norm.includes('virilha')) return 45;
+  if (norm.includes('meia perna') || norm.includes('1/2 perna')) return 45;
+  if (norm.includes('perna inteira') || norm.includes('perna completa')) return 50;
+  if (norm.includes('axila')) return 40;
+  if (norm.includes('rosto completo')) return 40;
+  if (norm.includes('buco') || norm.includes('mento') || norm.includes('umbigo')) return 30;
 
   return 60;
 }

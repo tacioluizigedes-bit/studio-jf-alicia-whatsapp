@@ -8,6 +8,11 @@ import { OwnerAgendaSetupService } from './ownerAgendaSetupService';
 import { extractBookingEntities } from './nlpEntityExtractor';
 import { getDepositRequestMessage, calculateDeposit50Percent } from './notificationService';
 import { DateTime } from 'luxon';
+import { prisma } from '../lib/prisma';
+import { formatDurationLabel } from './appointmentService';
+import { WhatsAppClientLike, sendHumanizedMessage } from '../utils/whatsappHelper';
+import { pendingPaymentLinkRequests } from './ownerControlService';
+import { baileysClientAdapter } from './whatsappConnection';
 
 // Declaração de ferramentas (Function Calling)
 const checkAvailabilityTool: FunctionDeclaration = {
@@ -88,6 +93,7 @@ export interface ProcessMessageParams {
   messageText: string;
   senderRole?: 'client' | 'owner' | 'admin';
   conversationHistory?: any[];
+  whatsappClient?: WhatsAppClientLike;
 }
 
 export interface ProcessMessageResult {
@@ -149,7 +155,7 @@ export class AIService {
     const fullSystemInstruction = `${SYSTEM_PROMPT}\n\n[CONTEXTO DE SISTEMA TEMPO REAL]\nData e Hora Atual: ${nowIso}\nTimezone: ${SALON_CONFIG.timezone}\nTelefone da Cliente em Atendimento: ${params.clientPhone}`;
 
     if (!this.hasRealApiKey()) {
-      const mockResult = await this.handleMockAIResponse(params.messageText, params.clientPhone, historyLength);
+      const mockResult = await this.handleMockAIResponse(params.messageText, params.clientPhone, historyLength, params.whatsappClient);
       return {
         ...mockResult,
         mode: 'simulated',
@@ -286,7 +292,7 @@ export class AIService {
       };
     } catch (error: any) {
       console.error('Erro na integração com Gemini AI:', error?.message || error);
-      const mockResult = await this.handleMockAIResponse(params.messageText, params.clientPhone, historyLength);
+      const mockResult = await this.handleMockAIResponse(params.messageText, params.clientPhone, historyLength, params.whatsappClient);
       return {
         reply: `${mockResult.reply}\n\n_(Nota: Resposta gerada via inteligência local do salão)_`,
         isHandoverTriggered: mockResult.isHandoverTriggered,
@@ -299,7 +305,8 @@ export class AIService {
   private async handleMockAIResponse(
     userMessage: string,
     clientPhone: string,
-    historyLength: number = 0
+    historyLength: number = 0,
+    whatsappClient?: WhatsAppClientLike
   ): Promise<{ reply: string; isHandoverTriggered: boolean; handoverReason?: string }> {
     const text = userMessage.toLowerCase().trim();
 
