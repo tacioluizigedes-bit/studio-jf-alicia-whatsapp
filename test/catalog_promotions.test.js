@@ -185,4 +185,21 @@ describe('--- GESTÃO DE CATÁLOGO, PREÇOS E PROMOÇÕES PELA JANAÍNA ---', ()
     assert.match(catalogRes.reply, /Volume Brasileiro/i);
   });
 
+  it('8. Deve criptografar (AES-256-GCM + GZIP) e descriptografar credenciais do Cofre na Nuvem perfeitamente', () => {
+    const { encryptBuffer, decryptBuffer, getVaultStatus } = require('../dist/services/whatsappSessionVault');
+    const sampleCreds = JSON.stringify({
+      me: { id: '5521960003154:1@s.whatsapp.net', name: 'Studio JF Designer' },
+      noiseKey: { private: 'abc', public: 'def' },
+    });
+    const encrypted = encryptBuffer(Buffer.from(sampleCreds, 'utf8'));
+    assert.ok(encrypted.length > 20);
+
+    const decrypted = decryptBuffer(encrypted).toString('utf8');
+    assert.strictEqual(decrypted, sampleCreds);
+
+    const st = getVaultStatus();
+    assert.strictEqual(st.enabled, true);
+    assert.strictEqual(st.repo, 'tacioluizigedes-bit/studio-jf-alicia-vault');
+  });
+
 });

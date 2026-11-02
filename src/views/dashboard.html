@@ -124,6 +124,12 @@
             <span>Agendar Online</span>
           </a>
 
+          <!-- Botão Central de Conexão 24/7 (Desktop/Tablet) -->
+          <a href="/qr" title="Central de Conexão Permanente 24/7 (Código de 8 Dígitos sem câmera)" aria-label="Conexão 24/7" class="hidden md:flex px-3 py-2 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 active:scale-95 text-teal-300 border border-teal-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
+            <span class="text-sm leading-none">🔑</span>
+            <span>Conexão 24/7</span>
+          </a>
+
           <!-- Botão Abrir Chat Alícia (Desktop/Tablet) -->
           <a href="/" target="_blank" title="Abrir Simulador Chat Alícia" aria-label="Abrir Chat Alícia" class="hidden md:flex px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 active:scale-95 text-emerald-400 border border-emerald-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
@@ -139,6 +145,10 @@
 
       <!-- Menu Colapsável Mobile (Drawer/Dropdown) -->
       <div id="mobileActionDrawer" class="hidden md:hidden mt-2.5 pt-2.5 border-t border-dark-600 grid grid-cols-1 gap-2">
+        <a href="/qr" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>🔑</span> Conexão 24/7 (Parear por Código sem QR Code)</span>
+          <span>➔</span>
+        </a>
         <button onclick="switchDashboardTab('CATALOG'); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-purple-600/15 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-between">
           <span class="flex items-center gap-2"><span>💅</span> Procedimentos, Tempos e Valores</span>
           <span>➔</span>

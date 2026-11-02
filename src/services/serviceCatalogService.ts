@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { SALON_CONFIG } from '../config/salonConfig';
 import { inferAppointmentDurationMinutes, formatDurationLabel } from './appointmentService';
+import { backupCatalogToVault } from './whatsappSessionVault';
 
 export interface ServiceItem {
   id: string;
@@ -70,6 +71,9 @@ export class ServiceCatalogService {
   private writeRawData(data: any): boolean {
     try {
       fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2), 'utf-8');
+      if (process.env.NODE_ENV === 'production') {
+        backupCatalogToVault(this.filePath).catch(() => {});
+      }
       return true;
     } catch (e) {
       console.error('Erro ao gravar services.json:', e);

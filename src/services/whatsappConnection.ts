@@ -1,6 +1,7 @@
 /**
  * src/services/whatsappConnection.ts
- * Serviço de inicialização, autenticação via QR Code e escuta de eventos do WhatsApp (Baileys)
+ * Serviço de inicialização, autenticação (QR Code + Código de 8 Dígitos sem câmera),
+ * Cofre de Persistência na Nuvem 24/7 e escuta de eventos do WhatsApp (Baileys)
  * para o canal comercial oficial do Studio JF Designer (5521960003154).
  */
 
@@ -25,6 +26,14 @@ import { handleClientFlow } from './clientFlowService';
 import { resolveSenderRole, normalizePhoneDigits } from '../config/phoneRoutingService';
 import { SALON_CONFIG } from '../config/salonConfig';
 import { WhatsAppClientLike } from '../utils/whatsappHelper';
+import {
+  restoreSessionFromVault,
+  backupSessionToVault,
+  scheduleSessionVaultBackup,
+  deleteVaultFile,
+  getVaultStatus,
+  hasLocalAuthenticatedSession,
+} from './whatsappSessionVault';
 
 dotenv.config();
 
@@ -38,7 +47,12 @@ export const AUTH_FOLDER = process.env.BAILEYS_AUTH_DIR
 let activeSocket: WASocket | null = null;
 let connectionStatus: 'disconnected' | 'connecting' | 'qr_ready' | 'connected' = 'disconnected';
 let latestQrCode: string | null = null;
+let latestPairingCode: string | null = null;
+let latestPairingPhone: string | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
+let watchdogTimer: NodeJS.Timeout | null = null;
+let consecutiveLogouts = 0;
+let isInitializing = false;
 
 // Mapa auxiliar para preservar o JID original e última chave de mensagem de cada cliente
 const jidCache = new Map<string, string>();
@@ -232,9 +246,10 @@ export const baileysClientAdapter: WhatsAppClientLike & {
 };
 
 /**
- * Retorna o estado atual da conexão com o WhatsApp
+ * Retorna o estado atual da conexão com o WhatsApp e do Cofre na Nuvem
  */
 export function getWhatsAppConnectionState() {
+  const vault = getVaultStatus();
   return {
     status: connectionStatus,
     officialNumber: STUDIO_OFFICIAL_NUMBER,
@@ -243,17 +258,153 @@ export function getWhatsAppConnectionState() {
     isConnected: connectionStatus === 'connected',
     hasQrCode: !!latestQrCode,
     qrCode: latestQrCode,
+    pairingCode: latestPairingCode,
+    pairingPhone: latestPairingPhone || STUDIO_OFFICIAL_NUMBER,
+    hasSavedSession: hasLocalAuthenticatedSession(AUTH_FOLDER) || vault.hasStoredSession,
+    vault,
   };
 }
 
 /**
- * Inicializa a conexão oficial do WhatsApp via Baileys, gerando o QR Code no terminal
- * e escutando eventos de conexão e mensagens para o número 5521960003154.
+ * Gera um Código de Pareamento de 8 Dígitos (Pairing Code) para conectar o WhatsApp
+ * diretamente pelo celular SEM precisar escanear QR Code com a câmera.
  */
-export async function initWhatsAppConnection(): Promise<WASocket | null> {
+export async function requestWhatsAppPairingCode(customPhone?: string): Promise<{
+  success: boolean;
+  code?: string;
+  formattedCode?: string;
+  phone?: string;
+  error?: string;
+}> {
   try {
+    if (connectionStatus === 'connected') {
+      return {
+        success: true,
+        code: 'CONECTADO',
+        formattedCode: 'JÁ CONECTADO',
+        phone: STUDIO_OFFICIAL_NUMBER,
+      };
+    }
+
+    const rawPhone = customPhone || STUDIO_OFFICIAL_NUMBER;
+    let digits = normalizePhoneDigits(rawPhone);
+    if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
+      digits = `55${digits}`;
+    }
+
+    if (digits.length < 12) {
+      return {
+        success: false,
+        error: 'Número de telefone inválido. Use DDI + DDD + Número (ex: 5521960003154).',
+      };
+    }
+
+    // Se não houver socket ativo ou se a sessão local estiver corrompida, reinicia limpo para pareamento
+    if (!activeSocket || hasLocalAuthenticatedSession(AUTH_FOLDER)) {
+      try {
+        fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+      } catch {}
+      await initWhatsAppConnection(true);
+      await new Promise((r) => setTimeout(r, 2200));
+    }
+
+    if (!activeSocket || typeof activeSocket.requestPairingCode !== 'function') {
+      return {
+        success: false,
+        error: 'Socket do WhatsApp ainda está inicializando. Aguarde 3 segundos e tente novamente.',
+      };
+    }
+
+    const code = await activeSocket.requestPairingCode(digits);
+    const cleanCode = (code || '').trim().toUpperCase();
+    const formattedCode =
+      cleanCode.length === 8 ? `${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}` : cleanCode;
+
+    latestPairingCode = formattedCode;
+    latestPairingPhone = digits;
+
+    console.log('\n============================================================');
+    console.log(`🔑 CÓDIGO DE PAREAMENTO WHATSAPP (SEM CÂMERA): ${formattedCode}`);
+    console.log(`📱 Número alvo: +${digits}`);
+    console.log('============================================================\n');
+
+    return {
+      success: true,
+      code: cleanCode,
+      formattedCode,
+      phone: digits,
+    };
+  } catch (err: any) {
+    console.error('❌ [Baileys] Erro ao solicitar Pairing Code:', err?.message || err);
+    return {
+      success: false,
+      error: err?.message || 'Não foi possível gerar o código de pareamento agora. Tente novamente em alguns segundos.',
+    };
+  }
+}
+
+/**
+ * Permite forçar reconexão ou limpar a sessão caso a proprietária troque de aparelho
+ */
+export async function forceReconnectWhatsApp(clearAllCredentials: boolean = false): Promise<void> {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  try {
+    if (activeSocket) {
+      activeSocket.ev.removeAllListeners('connection.update');
+      activeSocket.end(undefined);
+      activeSocket = null;
+    }
+  } catch {}
+
+  if (clearAllCredentials) {
+    latestQrCode = null;
+    latestPairingCode = null;
+    try {
+      fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+    } catch {}
+    await deleteVaultFile('baileys-session.enc');
+  }
+
+  await initWhatsAppConnection(clearAllCredentials);
+}
+
+/**
+ * Watchdog 24/7: Verifica a cada 90 segundos se a conexão caiu silenciosamente e a reativa
+ */
+function ensureWatchdogStarted() {
+  if (watchdogTimer) return;
+  watchdogTimer = setInterval(() => {
+    if (connectionStatus === 'disconnected' && !reconnectTimer && !isInitializing) {
+      console.log('🛡️ [WATCHDOG 24/7] Conexão inativa detectada. Acionando auto-recuperação...');
+      initWhatsAppConnection().catch((err) =>
+        console.error('❌ [WATCHDOG 24/7] Falha ao recuperar conexão:', err)
+      );
+    }
+  }, 90 * 1000);
+}
+
+/**
+ * Inicializa a conexão oficial do WhatsApp via Baileys, restaurando automaticamente a sessão
+ * do Cofre na Nuvem (sem pedir QR Code em redeploys) e escutando eventos para 5521960003154.
+ */
+export async function initWhatsAppConnection(skipVaultRestore: boolean = false): Promise<WASocket | null> {
+  if (isInitializing) return activeSocket;
+  isInitializing = true;
+
+  try {
+    ensureWatchdogStarted();
+
     if (!fs.existsSync(AUTH_FOLDER)) {
       fs.mkdirSync(AUTH_FOLDER, { recursive: true });
+    }
+
+    // 1. Antes de iniciar o Baileys, restaura automaticamente a sessão salva na nuvem caso o disco local tenha sido zerado pelo Render
+    if (!skipVaultRestore && !hasLocalAuthenticatedSession(AUTH_FOLDER)) {
+      await restoreSessionFromVault(AUTH_FOLDER);
     }
 
     connectionStatus = 'connecting';
@@ -273,26 +424,31 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
       // Mantém versão fallback estável caso não consiga consultar a versão remota
     }
 
+    // Importante: ['Ubuntu', 'Chrome', '20.0.04'] é exigido pelo WhatsApp para permitir tanto QR Code quanto Código de 8 Dígitos (Pairing Code)
     const sock = makeWASocket({
       version,
       auth: state,
-      printQRInTerminal: false, // Renderizamos manualmente com qrcode-terminal para layout limpo
+      printQRInTerminal: false,
       logger: pino({ level: 'silent' }) as any,
-      browser: ['Studio JF Designer - Alicia AI', 'Chrome', '1.0.0'],
+      browser: ['Ubuntu', 'Chrome', '20.0.04'],
       syncFullHistory: false,
       markOnlineOnConnect: true,
-      keepAliveIntervalMs: 25000, // Mantém o WebSocket ativo em servidores Cloud (Railway/Render/VPS)
+      keepAliveIntervalMs: 20000,
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
+      retryRequestDelayMs: 1500,
     });
 
     activeSocket = sock;
 
-    // Persistência automática de credenciais na pasta auth_info_baileys
-    sock.ev.on('creds.update', saveCreds);
+    // Persistência automática de credenciais na pasta local E no Cofre da Nuvem (AES-256)
+    sock.ev.on('creds.update', async () => {
+      await saveCreds();
+      scheduleSessionVaultBackup(AUTH_FOLDER, 8000);
+    });
 
-    // Monitoramento do estado da conexão e geração de QR Code
-    sock.ev.on('connection.update', (update) => {
+    // Monitoramento do estado da conexão
+    sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -300,7 +456,8 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
         connectionStatus = 'qr_ready';
         console.log('\n============================================================');
         console.log(`📲 PAREAMENTO WHATSAPP - STUDIO JF DESIGNER (Alícia)`);
-        console.log(`📌 Escaneie o QR Code abaixo com o WhatsApp do Studio: ${STUDIO_OFFICIAL_NUMBER} (21 96000-3154)`);
+        console.log(`📌 Opção 1 (Sem câmera): Acesse /qr e clique em "Gerar Código de 8 Dígitos"`);
+        console.log(`📌 Opção 2 (QR Code): Escaneie com o WhatsApp ${STUDIO_OFFICIAL_NUMBER}`);
         console.log('============================================================\n');
         qrcode.generate(qr, { small: true });
         console.log('\n============================================================\n');
@@ -308,49 +465,112 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
 
       if (connection === 'open') {
         latestQrCode = null;
+        latestPairingCode = null;
         connectionStatus = 'connected';
+        consecutiveLogouts = 0;
+
         if (reconnectTimer) {
           clearTimeout(reconnectTimer);
           reconnectTimer = null;
         }
-        console.log(`\n✅ [WhatsApp Conectado: ${STUDIO_OFFICIAL_NUMBER}]`);
+
+        console.log(`\n✅ [WhatsApp Conectado 24/7: ${STUDIO_OFFICIAL_NUMBER}]`);
         console.log(`👑 Linha Executiva da Proprietária (Janaína): ${OWNER_PERSONAL_NUMBER}`);
         console.log(`💠 Chave PIX Oficial Ativa: ${STUDIO_PIX_KEY}\n`);
+
+        // Salva imediatamente a sessão autenticada no Cofre da Nuvem para blindar contra futuros deploys
+        backupSessionToVault(AUTH_FOLDER).catch(() => {});
       }
 
       if (connection === 'close') {
         connectionStatus = 'disconnected';
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isReplaced = statusCode === DisconnectReason.connectionReplaced || statusCode === 440;
+        const isBadSession = statusCode === DisconnectReason.badSession || statusCode === 500;
 
         console.warn(
           `⚠️ [Baileys] Conexão WhatsApp encerrada (código: ${statusCode ?? 'desconhecido'}).`
         );
 
-        if (!isLoggedOut) {
-          console.log('🔄 [Baileys] Tentando reconexão automática do WhatsApp em 4 segundos...');
+        // Caso 1: Conflito de deploy (container antigo vs container novo no Render) -> aguarda 20s sem apagar credenciais
+        if (isReplaced) {
+          console.log(
+            '⏳ [Baileys] Conexão assumida por nova instância de deploy (440). Aguardando 20s em standby seguro...'
+          );
           if (reconnectTimer) clearTimeout(reconnectTimer);
           reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            initWhatsAppConnection().catch((err) =>
+              console.error('❌ [Baileys] Erro ao reconectar após standby:', err)
+            );
+          }, 20000);
+          return;
+        }
+
+        // Caso 2: Sessão corrompida localmente (500) -> restaura do Cofre da Nuvem sem pedir QR Code
+        if (isBadSession) {
+          console.log('☁️🔄 [Baileys] Restaurando sessão íntegra do Cofre na Nuvem após erro 500...');
+          await restoreSessionFromVault(AUTH_FOLDER, true);
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            initWhatsAppConnection(true).catch(() => {});
+          }, 4000);
+          return;
+        }
+
+        // Caso 3: Oscilação normal de rede / restartRequired (515) / timeout (408) -> reconecta rápido
+        if (!isLoggedOut) {
+          const delayMs = statusCode === DisconnectReason.restartRequired ? 1500 : 4000;
+          console.log(`🔄 [Baileys] Reconectando automaticamente o WhatsApp em ${delayMs / 1000}s...`);
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
             initWhatsAppConnection().catch((err) =>
               console.error('❌ [Baileys] Erro ao tentar reconectar:', err)
             );
-          }, 4000);
-        } else {
+          }, delayMs);
+          return;
+        }
+
+        // Caso 4: Logged Out (401)
+        consecutiveLogouts += 1;
+        if (consecutiveLogouts === 1) {
           console.warn(
-            '🚪 [Baileys] Sessão desconectada pelo aparelho (Logged Out). Limpando credenciais antigas para gerar novo QR Code...'
+            '☁️🛡️ [Baileys] Recebido código 401. Tentando recuperar sessão do Cofre na Nuvem antes de solicitar novo pareamento...'
           );
           try {
             fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
-          } catch (cleanErr) {
-            console.error('Erro ao limpar pasta auth_info_baileys:', cleanErr);
+          } catch {}
+          const restored = await restoreSessionFromVault(AUTH_FOLDER, true);
+          if (restored) {
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(() => {
+              reconnectTimer = null;
+              initWhatsAppConnection(true).catch(() => {});
+            }, 3000);
+            return;
           }
-          if (reconnectTimer) clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(() => {
-            initWhatsAppConnection().catch((err) =>
-              console.error('❌ [Baileys] Erro ao reiniciar pareamento:', err)
-            );
-          }, 3000);
         }
+
+        console.warn(
+          '🚪 [Baileys] Sessão desconectada pelo aparelho. Limpando credenciais para permitir novo pareamento via Código ou QR...'
+        );
+        try {
+          fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+        } catch (cleanErr) {
+          console.error('Erro ao limpar pasta auth_info_baileys:', cleanErr);
+        }
+        await deleteVaultFile('baileys-session.enc');
+
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          initWhatsAppConnection(true).catch((err) =>
+            console.error('❌ [Baileys] Erro ao reiniciar pareamento:', err)
+          );
+        }, 3000);
       }
     });
 
@@ -401,7 +621,6 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
             await handleOwnerCommands(baileysClientAdapter, fromNumber, messageBody);
           } else {
             // Rota B (Clientes do Studio): Qualquer outro número vai para o fluxo da Alícia
-            // com delay humanizado >= 5s, presença 'composing', regras de 1ª vez vs cliente antiga e PIX 21960003154
             console.log(`✨ [Rota B - Cliente Studio] Mensagem recebida de ${fromNumber}: "${messageBody}"`);
             await handleClientFlow(baileysClientAdapter, fromNumber, messageBody);
           }
@@ -416,11 +635,15 @@ export async function initWhatsAppConnection(): Promise<WASocket | null> {
     console.error('❌ [Baileys] Erro ao inicializar conexão com o WhatsApp:', error);
     connectionStatus = 'disconnected';
     return null;
+  } finally {
+    isInitializing = false;
   }
 }
 
 export default {
   initWhatsAppConnection,
+  requestWhatsAppPairingCode,
+  forceReconnectWhatsApp,
   sendMessage,
   sendPresenceUpdate,
   markRead,
