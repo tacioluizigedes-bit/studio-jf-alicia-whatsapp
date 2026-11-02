@@ -165,6 +165,7 @@ app.get('/qr', (req: Request, res: Response) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conexão Permanente 24/7 - ${SALON_CONFIG.name}</title>
+  <link rel="icon" type="image/png" href="/logo-jf.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0b141a; color: #e9edef; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
@@ -194,6 +195,9 @@ app.get('/qr', (req: Request, res: Response) => {
 </head>
 <body>
   <div class="card">
+    <div style="width:78px; height:78px; margin:0 auto 10px; background:#0b141a; border:1px solid rgba(245,158,11,0.45); border-radius:16px; padding:6px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(245,158,11,0.18);">
+      <img src="/logo-jf.png" alt="Logo JF Lash e Designer" style="width:100%; height:100%; object-fit:contain;" />
+    </div>
     <h1>📲 Conexão 24/7 - ${SALON_CONFIG.name}</h1>
     <p class="subtitle">
       WhatsApp Oficial: <strong>${state.officialNumber}</strong> &bull; Admin: <strong>${state.ownerPersonalNumber}</strong>
@@ -511,6 +515,7 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${SALON_CONFIG.name} - Teste do Agente WhatsApp</title>
+  <link rel="icon" type="image/png" href="/logo-jf.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -519,8 +524,8 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
     .app-container { width: 100%; max-width: 540px; height: 94vh; background: #111b21; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.6); border: 1px solid #222e35; }
     .chat-header { background: #202c33; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222e35; }
     .chat-header-info { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #ec4899, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff; transition: all 0.3s; }
-    .avatar.admin { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .avatar { width: 44px; height: 44px; border-radius: 12px; background: #0b141a; border: 1px solid rgba(245,158,11,0.45); padding: 3px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff; transition: all 0.3s; overflow: hidden; }
+    .avatar.admin { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245,158,11,0.35); }
     .header-details h1 { font-size: 15px; font-weight: 600; color: #e9edef; }
     .header-details p { font-size: 11.5px; color: #8696a0; display: flex; align-items: center; gap: 4px; }
     .status-dot { width: 8px; height: 8px; background: #00a884; border-radius: 50%; display: inline-block; }
@@ -549,7 +554,7 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
   <div class="app-container">
     <div class="chat-header">
       <div class="chat-header-info">
-        <div class="avatar" id="headerAvatar">✨</div>
+        <div class="avatar" id="headerAvatar"><img src="/logo-jf.png" alt="JF" style="width:100%; height:100%; object-fit:contain;" /></div>
         <div class="header-details">
           <h1>${SALON_CONFIG.name}</h1>
           <p><span class="status-dot"></span> <span id="statusText">${SALON_CONFIG.assistantName} (Assistente Virtual)</span></p>
@@ -618,14 +623,12 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
         currentMode = 'owner';
         modeToggleBtn.innerText = '👑 Modo: Janaína (Admin)';
         modeToggleBtn.classList.add('badge-admin');
-        headerAvatar.innerText = '👑';
         headerAvatar.classList.add('admin');
         statusText.innerText = 'Janaína Ferreira (Proprietária / Admin)';
       } else {
         currentMode = 'client';
         modeToggleBtn.innerText = '📱 Modo: Cliente';
         modeToggleBtn.classList.remove('badge-admin');
-        headerAvatar.innerText = '✨';
         headerAvatar.classList.remove('admin');
         statusText.innerText = '${SALON_CONFIG.assistantName} (Assistente Virtual)';
       }
@@ -709,6 +712,23 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
 </html>`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
+});
+
+/**
+ * Rota para servir a logo oficial do Studio JF Lash e Designer (/logo-jf.png e /favicon.ico)
+ */
+app.get(['/logo-jf.png', '/favicon.png', '/favicon.ico'], (req: Request, res: Response) => {
+  const distLogo = path.resolve(__dirname, 'views', 'logo-jf.png');
+  if (fs.existsSync(distLogo)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(distLogo);
+  }
+  const srcLogo = path.resolve(process.cwd(), 'src', 'views', 'logo-jf.png');
+  if (fs.existsSync(srcLogo)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(srcLogo);
+  }
+  return res.status(404).end();
 });
 
 /**

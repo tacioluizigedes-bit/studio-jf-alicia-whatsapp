@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Studio JF Designer — Agendamento Online</title>
+  <title>Studio JF Lash e Designer — Agendamento Online</title>
+  <link rel="icon" type="image/png" href="/logo-jf.png">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -75,19 +76,17 @@
 </head>
 <body class="bg-[#0f172a] text-slate-100 min-h-screen pb-44 antialiased selection:bg-pink-500 selection:text-white">
 
-  <!-- HEADER COMPACTO E ELEGANTE -->
-  <header class="sticky top-0 z-30 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800">
-    <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between">
+  <!-- HEADER COMPACTO E ELEGANTE COM LOGO OFICIAL -->
+  <header class="sticky top-0 z-30 bg-[#0f172a]/95 backdrop-blur-md border-b border-amber-500/20 shadow-lg shadow-black/30">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 via-fuchsia-600 to-amber-500 p-[1.5px] shadow-lg shadow-pink-500/20">
-          <div class="w-full h-full bg-[#0f172a] rounded-[10px] flex items-center justify-center font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-amber-300 text-base">
-            JF
-          </div>
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-b from-[#1c160d] to-[#090f1d] border border-amber-500/45 p-1 shadow-lg shadow-amber-500/15 flex items-center justify-center shrink-0">
+          <img src="/logo-jf.png" alt="Logo JF Lash e Designer" class="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)]" />
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Studio JF Designer</h1>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200">Studio JF Lash e Designer</h1>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
               ✨ Agenda Online
             </span>
           </div>
@@ -95,7 +94,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0">
         <a href="/" class="text-xs font-medium text-slate-300 hover:text-white bg-[#1e293b] hover:bg-slate-700/80 border border-slate-700 px-3 py-2 rounded-xl transition flex items-center gap-1.5">
           <span>💬</span>
           <span class="hidden sm:inline">Chat Alícia</span>
@@ -105,7 +104,21 @@
   </header>
 
   <!-- CONTEÚDO PRINCIPAL -->
-  <main class="max-w-3xl mx-auto px-4 pt-5 space-y-7">
+  <main class="max-w-3xl mx-auto px-4 pt-5 space-y-6">
+
+    <!-- BANNER DESTAQUE COM A LOGO OFICIAL DO STUDIO -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a140c] via-[#0f172a] to-[#1e1b2e] border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 shadow-xl shadow-black/40">
+      <div class="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl bg-[#090f1d]/90 border border-amber-500/40 p-2 flex items-center justify-center shadow-inner">
+        <img src="/logo-jf.png" alt="JF Lash e Designer" class="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(245,158,11,0.45)]" />
+      </div>
+      <div class="text-center sm:text-left space-y-1">
+        <span class="inline-block text-[11px] font-bold uppercase tracking-widest text-amber-400">Bem-vinda ao Espaço de Beleza</span>
+        <h2 class="text-lg sm:text-xl font-extrabold text-white">JF Lash e Designer — Janaína Ferreira</h2>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Escolha um ou mais procedimentos abaixo para consultar os horários livres em tempo real e finalizar seu agendamento com a <strong class="text-pink-400">Alícia</strong> no WhatsApp.
+        </p>
+      </div>
+    </div>
 
     <!-- PASSO 1: SELETOR DE CATEGORIA E SERVIÇO -->
     <section aria-labelledby="step-service-heading" class="space-y-4">
