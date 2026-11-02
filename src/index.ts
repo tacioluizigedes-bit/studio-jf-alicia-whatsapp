@@ -195,8 +195,8 @@ app.get('/qr', (req: Request, res: Response) => {
 </head>
 <body>
   <div class="card">
-    <div style="width:78px; height:78px; margin:0 auto 10px; background:#0b141a; border:1px solid rgba(245,158,11,0.45); border-radius:16px; padding:6px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(245,158,11,0.18);">
-      <img src="/logo-jf.png" alt="Logo JF Lash e Designer" style="width:100%; height:100%; object-fit:contain;" />
+    <div style="width:96px; height:96px; margin:0 auto 10px; background:radial-gradient(circle, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.58) 58%, transparent 100%); border-radius:999px; padding:4px; display:flex; align-items:center; justify-content:center;">
+      <img src="/logo-jf.png" alt="Logo JF Lash e Designer" style="width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.85));" />
     </div>
     <h1>📲 Conexão 24/7 - ${SALON_CONFIG.name}</h1>
     <p class="subtitle">
@@ -524,8 +524,8 @@ app.get(['/', '/chat'], (req: Request, res: Response) => {
     .app-container { width: 100%; max-width: 540px; height: 94vh; background: #111b21; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.6); border: 1px solid #222e35; }
     .chat-header { background: #202c33; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222e35; }
     .chat-header-info { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 44px; height: 44px; border-radius: 12px; background: #0b141a; border: 1px solid rgba(245,158,11,0.45); padding: 3px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff; transition: all 0.3s; overflow: hidden; }
-    .avatar.admin { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245,158,11,0.35); }
+    .avatar { width: 54px; height: 54px; border-radius: 999px; background: radial-gradient(circle, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 58%, transparent 100%); padding: 2px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #fff; transition: all 0.3s; overflow: hidden; }
+    .avatar.admin { box-shadow: 0 0 12px rgba(245,158,11,0.35); }
     .header-details h1 { font-size: 15px; font-weight: 600; color: #e9edef; }
     .header-details p { font-size: 11.5px; color: #8696a0; display: flex; align-items: center; gap: 4px; }
     .status-dot { width: 8px; height: 8px; background: #00a884; border-radius: 50%; display: inline-block; }
