@@ -120,11 +120,54 @@
       </div>
     </div>
 
-    <!-- PASSO 1: SELETOR DE CATEGORIA E SERVIÇO -->
+    <!-- PASSO 1: SEUS DADOS (NOME E TELEFONE PARA O WHATSAPP) -->
+    <section aria-labelledby="step-client-heading" class="space-y-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">1</span>
+          <h2 id="step-client-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
+            Seus Dados de Identificação
+          </h2>
+        </div>
+        <span class="text-[11px] text-slate-400">Enviados junto com seu pedido no WhatsApp</span>
+      </div>
+
+      <div class="bg-[#1e293b]/80 border border-slate-800 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label for="clientNameInput" class="block text-xs font-bold text-slate-300 mb-1.5">
+            👤 Seu Nome Completo <span class="text-pink-400">*</span>
+          </label>
+          <input
+            type="text"
+            id="clientNameInput"
+            oninput="BookingController.onClientInfoInput('page')"
+            placeholder="Ex: Maria Clara Silva"
+            autocomplete="name"
+            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
+          />
+        </div>
+        <div>
+          <label for="clientPhoneInput" class="block text-xs font-bold text-slate-300 mb-1.5">
+            📱 Seu Telefone / WhatsApp <span class="text-pink-400">*</span>
+          </label>
+          <input
+            type="tel"
+            id="clientPhoneInput"
+            oninput="BookingController.onClientInfoInput('page')"
+            placeholder="Ex: (21) 99999-9999"
+            autocomplete="tel"
+            maxlength="16"
+            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- PASSO 2: SELETOR DE CATEGORIA E SERVIÇO -->
     <section aria-labelledby="step-service-heading" class="space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">1</span>
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">2</span>
           <h2 id="step-service-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
             Escolha o Procedimento
           </h2>
@@ -145,11 +188,11 @@
       </div>
     </section>
 
-    <!-- PASSO 2: SELETOR DE DATA (CARROSSEL DE DIAS + NAVEGAÇÃO) -->
+    <!-- PASSO 3: SELETOR DE DATA (CARROSSEL DE DIAS + NAVEGAÇÃO) -->
     <section aria-labelledby="step-date-heading" class="space-y-3.5">
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">2</span>
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">3</span>
           <h2 id="step-date-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
             Selecione a Data
           </h2>
@@ -197,11 +240,11 @@
       </div>
     </section>
 
-    <!-- PASSO 3: GRADE DE HORÁRIOS (MANHÃ E TARDE) -->
+    <!-- PASSO 4: GRADE DE HORÁRIOS (MANHÃ E TARDE) -->
     <section aria-labelledby="step-slots-heading" class="space-y-4">
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">3</span>
+          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">4</span>
           <h2 id="step-slots-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
             Horários para <span id="selectedDateTitle" class="text-pink-400">--/--</span>
           </h2>
@@ -278,49 +321,6 @@
         <p id="closedStateMessage" class="text-xs text-slate-400 max-w-md mx-auto">
           Selecione outro dia útil ou sábado no calendário acima para visualizar os horários disponíveis.
         </p>
-      </div>
-    </section>
-
-    <!-- PASSO 4: SEUS DADOS (NOME E TELEFONE PARA O WHATSAPP) -->
-    <section aria-labelledby="step-client-heading" class="space-y-4">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div class="flex items-center gap-2.5">
-          <span class="w-6 h-6 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold flex items-center justify-center">4</span>
-          <h2 id="step-client-heading" class="text-sm sm:text-base font-bold text-white tracking-wide uppercase">
-            Seus Dados de Identificação
-          </h2>
-        </div>
-        <span class="text-[11px] text-slate-400">Enviados junto com seu pedido no WhatsApp</span>
-      </div>
-
-      <div class="bg-[#1e293b]/80 border border-slate-800 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div>
-          <label for="clientNameInput" class="block text-xs font-bold text-slate-300 mb-1.5">
-            👤 Seu Nome Completo <span class="text-pink-400">*</span>
-          </label>
-          <input
-            type="text"
-            id="clientNameInput"
-            oninput="BookingController.onClientInfoInput('page')"
-            placeholder="Ex: Maria Clara Silva"
-            autocomplete="name"
-            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
-          />
-        </div>
-        <div>
-          <label for="clientPhoneInput" class="block text-xs font-bold text-slate-300 mb-1.5">
-            📱 Seu Telefone / WhatsApp <span class="text-pink-400">*</span>
-          </label>
-          <input
-            type="tel"
-            id="clientPhoneInput"
-            oninput="BookingController.onClientInfoInput('page')"
-            placeholder="Ex: (21) 99999-9999"
-            autocomplete="tel"
-            maxlength="16"
-            class="w-full bg-[#0f172a] border border-slate-700 focus:border-pink-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition"
-          />
-        </div>
       </div>
     </section>
 
