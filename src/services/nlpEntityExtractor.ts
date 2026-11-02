@@ -514,9 +514,9 @@ export function extractTime(text: string): { timeStr?: string; periodOfDay?: 'mo
     .replace(/\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/g, ' ')
     .replace(/\bdia\s+\d{1,2}\b/g, ' ');
 
-  // Prioriza horários explícitos com sufixo (14hs, 14h, 14h30, 14:00, às 14)
+  // Prioriza horários explícitos com sufixo (14hs, 14h, 14h30, 14:00, às 14, das 14)
   const explicitTimeRegex =
-    /(?:as|às|para as|para|de)?\s*\b(\d{1,2})(?:[:h](\d{2}))?\s*(?:hs|hrs|hr|h|horas|min)\b|(?:as|às|para as)\s+\b(\d{1,2})(?::(\d{2}))?\b|\b(\d{1,2}):(\d{2})\b/i;
+    /(?:as|às|das|da|do|para as|para|de)?\s*\b(\d{1,2})(?:[:h](\d{2}))?\s*(?:hs|hrs|hr|h|horas|min)\b|(?:as|às|das|para as)\s+\b(\d{1,2})(?::(\d{2}))?\b|\b(\d{1,2}):(\d{2})\b/i;
 
   const match = cleanedForTime.match(explicitTimeRegex);
 
@@ -568,6 +568,9 @@ export function extractTime(text: string): { timeStr?: string; periodOfDay?: 'mo
  */
 const DOMAIN_STOP_WORDS = new Set([
   'marcar', 'marca', 'agendar', 'agenda', 'encaixar', 'encaixa', 'reservar', 'reserva',
+  'desmarcar', 'desmarca', 'cancelar', 'cancela', 'excluir', 'exclui', 'remover', 'remove',
+  'tirar', 'tira', 'apagar', 'apaga', 'liberar', 'libera', 'desbloquear', 'desbloqueia',
+  'agendamento', 'agendamentos', 'atendimento', 'atendimentos',
   'colocar', 'coloca', 'confirmar', 'confirma', 'cliente', 'clientes', 'uma', 'um',
   'para', 'pra', 'pro', 'as', 'às', 'a', 'o', 'os', 'de', 'da', 'do', 'das', 'dos',
   'em', 'na', 'no', 'nas', 'nos', 'com', 'sem', 'por', 'e', 'ou',

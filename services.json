@@ -346,8 +346,8 @@
       "name": "Limpeza de Pele Profunda",
       "category": "estetica_facial",
       "price": 120,
-      "durationMinutes": 120,
-      "description": "Higienização profunda, esfoliação, extração e hidratação (2h00min)."
+      "durationMinutes": 60,
+      "description": "Higienização profunda, esfoliação, extração e hidratação."
     }
   ]
 }

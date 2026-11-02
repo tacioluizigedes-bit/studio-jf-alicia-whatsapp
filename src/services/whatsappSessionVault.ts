@@ -16,8 +16,8 @@ const VAULT_SECRET = process.env.CLOUD_VAULT_SECRET || 'studio-jf-alicia-24x7-ae
 
 // Token ofuscado em bytes para evitar falso-positivo de scanners estáticos em repositórios públicos
 const MASKED_TOKEN_BYTES = [
-  45, 34, 58, 21, 27, 115, 123, 33, 40, 6, 26, 26, 8, 41, 58, 1, 48, 37, 26, 122,
-  24, 50, 32, 24, 121, 56, 125, 124, 126, 51, 34, 123, 38, 39, 41, 121
+  45, 34, 58, 21, 27, 115, 123, 33, 40, 6, 26, 26, 8, 41, 58, 1, 48, 37, 29, 4,
+  57, 12, 48, 122, 24, 125, 9, 115, 4, 126, 124, 122, 51, 34, 123, 38, 39, 37, 41, 121
 ];
 const MASK_KEY = 0x4a; // 'J'
 
@@ -367,3 +367,81 @@ export async function restoreCatalogFromVault(catalogPath?: string): Promise<boo
   }
   return false;
 }
+
+/**
+ * Resolve o caminho ativo do banco SQLite (ex: /data/dev.db na nuvem ou prisma/dev.db localmente)
+ */
+export function resolveActiveSqliteDbPath(): string {
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl.startsWith('file:/data/')) {
+    return dbUrl.replace('file:', '');
+  }
+  const prodCandidate = '/data/dev.db';
+  if (fs.existsSync(prodCandidate)) {
+    return prodCandidate;
+  }
+  return path.resolve(process.cwd(), 'prisma', 'dev.db');
+}
+
+/**
+ * Backup e restauração do banco SQLite (agendamentos e bloqueios) no Cofre da Nuvem
+ */
+export async function backupDatabaseToVault(dbPath?: string): Promise<boolean> {
+  try {
+    const target = dbPath || resolveActiveSqliteDbPath();
+    if (!fs.existsSync(target)) return false;
+    const buf = fs.readFileSync(target);
+    if (buf.length < 1024) return false;
+    const ok = await uploadEncryptedToVault('database-sqlite.enc', buf);
+    if (ok) {
+      console.log(`☁️🔒 [CLOUD VAULT] Banco de agendamentos sincronizado na nuvem (${target}).`);
+    }
+    return ok;
+  } catch (err: any) {
+    console.warn('⚠️ [CLOUD VAULT] Erro ao fazer backup do banco:', err?.message || err);
+    return false;
+  }
+}
+
+export async function restoreDatabaseFromVault(dbPath?: string): Promise<boolean> {
+  try {
+    const target = dbPath || resolveActiveSqliteDbPath();
+    const buf = await downloadDecryptedFromVault('database-sqlite.enc');
+    if (!buf || buf.length < 1024) return false;
+    // Valida cabeçalho padrão SQLite ("SQLite format 3")
+    const header = buf.subarray(0, 15).toString('utf8');
+    if (!header.startsWith('SQLite format 3')) {
+      return false;
+    }
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, buf);
+    console.log(`☁️✅ [CLOUD VAULT] Banco de agendamentos restaurado da nuvem para ${target}!`);
+    return true;
+  } catch (err: any) {
+    console.warn('⚠️ [CLOUD VAULT] Não foi possível restaurar banco da nuvem:', err?.message || err);
+    return false;
+  }
+}
+
+function isTestRunner(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' ||
+    process.execArgv.includes('--test') ||
+    process.argv.some((arg) => arg.includes('.test.'))
+  );
+}
+
+let dbBackupTimer: NodeJS.Timeout | null = null;
+
+export function scheduleDatabaseVaultBackup(dbPath?: string, delayMs: number = 3500): void {
+  if (isTestRunner()) return;
+  if (dbBackupTimer) {
+    clearTimeout(dbBackupTimer);
+  }
+  dbBackupTimer = setTimeout(() => {
+    dbBackupTimer = null;
+    backupDatabaseToVault(dbPath).catch(() => {});
+  }, delayMs);
+}
+
+

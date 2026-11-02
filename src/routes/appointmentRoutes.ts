@@ -5,6 +5,7 @@ import { triggerWeeklyReportNow } from '../jobs/weeklyReportJob';
 import { process24hReminders } from '../jobs/reminderJob';
 import { buildWeeklyReportMessage } from '../services/notificationService';
 import { serviceCatalogService } from '../services/serviceCatalogService';
+import { scheduleDatabaseVaultBackup } from '../services/whatsappSessionVault';
 
 export const appointmentRouter = Router();
 const appointmentService = new AppointmentService();
@@ -16,6 +17,7 @@ const appointmentService = new AppointmentService();
 appointmentRouter.post('/webhook-alicia', async (req: Request, res: Response) => {
   try {
     const result = await appointmentService.createAliciaAppointment(req.body);
+    scheduleDatabaseVaultBackup();
     return res.status(201).json(result);
   } catch (error: any) {
     if (error instanceof ZodError) {
@@ -51,6 +53,7 @@ appointmentRouter.post('/:id/reschedule', async (req: Request, res: Response) =>
     }
 
     const result = await appointmentService.requestReschedule(id, newDate, durationMinutes);
+    scheduleDatabaseVaultBackup();
     return res.json(result);
   } catch (error: any) {
     console.error(`Erro ao remarcar agendamento ${req.params.id}:`, error);
@@ -71,6 +74,7 @@ appointmentRouter.patch('/:id/confirm-deposit', async (req: Request, res: Respon
     const { confirmedBy = 'Operador', notes } = req.body;
 
     const result = await appointmentService.confirmDeposit(id, confirmedBy, notes);
+    scheduleDatabaseVaultBackup();
     return res.json(result);
   } catch (error: any) {
     console.error(`Erro ao confirmar sinal do agendamento ${req.params.id}:`, error);
@@ -92,6 +96,7 @@ appointmentRouter.patch('/:id/receipt', async (req: Request, res: Response) => {
     const { notes } = req.body;
 
     const result = await appointmentService.markReceiptSent(id, notes);
+    scheduleDatabaseVaultBackup();
     return res.json(result);
   } catch (error: any) {
     console.error(`Erro ao registrar comprovante do agendamento ${req.params.id}:`, error);
@@ -113,6 +118,7 @@ appointmentRouter.patch('/:id/cancel', async (req: Request, res: Response) => {
     const { reason } = req.body;
 
     const result = await appointmentService.cancelAppointment(id, reason);
+    scheduleDatabaseVaultBackup();
     return res.json(result);
   } catch (error: any) {
     console.error(`Erro ao cancelar agendamento ${req.params.id}:`, error);

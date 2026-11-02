@@ -26,7 +26,12 @@ import {
   forceReconnectWhatsApp,
   AUTH_FOLDER,
 } from './services/whatsappConnection';
-import { backupSessionToVault, restoreCatalogFromVault } from './services/whatsappSessionVault';
+import {
+  backupSessionToVault,
+  restoreCatalogFromVault,
+  backupDatabaseToVault,
+  backupCatalogToVault,
+} from './services/whatsappSessionVault';
 import { serviceCatalogService } from './services/serviceCatalogService';
 
 dotenv.config();
@@ -125,8 +130,12 @@ app.post('/api/whatsapp/reconnect', async (req: Request, res: Response) => {
 app.post('/api/whatsapp/vault-sync', async (req: Request, res: Response) => {
   try {
     const synced = await backupSessionToVault(AUTH_FOLDER);
+    const dbSynced = await backupDatabaseToVault().catch(() => false);
+    const catalogSynced = await backupCatalogToVault().catch(() => false);
     return res.json({
       success: synced,
+      dbSynced,
+      catalogSynced,
       state: getWhatsAppConnectionState(),
     });
   } catch (error: any) {

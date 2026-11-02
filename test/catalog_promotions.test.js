@@ -202,4 +202,34 @@ describe('--- GESTÃO DE CATÁLOGO, PREÇOS E PROMOÇÕES PELA JANAÍNA ---', ()
     assert.strictEqual(st.repo, 'tacioluizigedes-bit/studio-jf-alicia-vault');
   });
 
+  it('9. Deve permitir que a Janaína desmarque um atendimento informando apenas o horário e a data ("Desmarcar o horário das 14hs dia 03/11")', async () => {
+    const { prisma } = require('../dist/lib/prisma');
+    const testDate = new Date('2026-11-05T17:00:00.000Z'); // 05/11 às 14:00 BRT
+
+    const created = await prisma.appointment.create({
+      data: {
+        clientName: 'Fernanda',
+        whatsappPhone: '5521900000000',
+        service: 'Limpeza de Pele Profunda',
+        appointmentDate: testDate,
+        totalAmount: 120,
+        depositAmount: 0,
+        depositStatus: 'EXEMPT',
+        generalStatus: 'CONFIRMED',
+        depositDeadline: testDate,
+        isFirstAppointment: false,
+      },
+    });
+
+    try {
+      const cancelRes = await handleOwnerCommands('5521993826303', 'Desmarcar o horário das 14hs dia 05/11');
+      assert.strictEqual(cancelRes.action, 'cancel_appointment');
+      assert.match(cancelRes.reply, /Atendimento Desmarcado com Sucesso/i);
+      assert.match(cancelRes.reply, /Fernanda/i);
+      assert.match(cancelRes.reply, /Limpeza de Pele Profunda/i);
+    } finally {
+      await prisma.appointment.delete({ where: { id: created.id } }).catch(() => {});
+    }
+  });
+
 });

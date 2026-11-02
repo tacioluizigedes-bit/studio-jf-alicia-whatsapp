@@ -16,6 +16,7 @@ import { isBiweeklyTuesdayBlocked, sanitizeToE164, inferAppointmentDurationMinut
 import { OwnerAgendaSetupService } from './ownerAgendaSetupService';
 import { extractBookingEntities, extractService, extractTime, extractClientName } from './nlpEntityExtractor';
 import { serviceCatalogService } from './serviceCatalogService';
+import { scheduleDatabaseVaultBackup } from './whatsappSessionVault';
 
 const ownerAgendaSetupService = new OwnerAgendaSetupService();
 
@@ -422,6 +423,7 @@ export async function handleOwnerCommands(
   if (pending) {
     if (isOwnerPositiveConfirmation(cleanText)) {
       const reply = await executePendingOwnerAction(whatsappClient, ownerPhone, pending);
+      scheduleDatabaseVaultBackup();
       return { status: 'success', action: 'confirmed_owner_override', reply, message: reply, response: reply };
     }
     if (isOwnerNegativeConfirmation(cleanText)) {
@@ -468,6 +470,7 @@ export async function handleOwnerCommands(
   // COMANDO 1: Montagem / Abertura de Grade Mensal (Prioridade Alta para Fluxo Administrativo)
   if (ownerAgendaSetupService.isAdminIntent(cleanText) || ownerAgendaSetupService.isPhoneInAdminFlow(ownerPhone)) {
     const flowRes = await ownerAgendaSetupService.processAdminMessage(ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     if (whatsappClient) {
       await sendHumanizedMessage(whatsappClient, ownerPhone, flowRes.reply, 3000);
     }
@@ -477,18 +480,21 @@ export async function handleOwnerCommands(
   // COMANDO 2: Agendamento Direto pela Janaína (com detecção de horário bloqueado, motivo do bloqueio e confirmação)
   if (isOwnerBookingIntent(cleanText)) {
     const reply = await handleOwnerDirectBooking(whatsappClient, ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     return { status: 'success', action: 'owner_direct_booking', reply, message: reply, response: reply };
   }
 
   // COMANDO 2.5: Liberar / Desbloquear Horário diretamente
   if (isOwnerUnblockIntent(cleanText)) {
     const reply = await handleUnblockSlotByOwner(whatsappClient, ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     return { status: 'success', action: 'unblock_slot', reply, message: reply, response: reply };
   }
 
   // COMANDO 2.6: Confirmar Sinal / PIX de Cliente diretamente pelo WhatsApp da Janaína
   if (isOwnerConfirmDepositIntent(cleanText)) {
     const reply = await handleConfirmDepositByOwner(whatsappClient, ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     return { status: 'success', action: 'confirm_deposit_owner', reply, message: reply, response: reply };
   }
 
@@ -501,18 +507,24 @@ export async function handleOwnerCommands(
     lower.startsWith('folga')
   ) {
     const reply = await handleBlockSlot(whatsappClient, ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     return { status: 'success', action: 'block_slot', reply, message: reply, response: reply };
   }
 
-  // COMANDO 4: Desmarcar/Cancelar Cliente por Ordem da Proprietária
-  // Exemplo: "desmarcar cliente Mariana dia 18/10 15h" ou "desmarcar Mariana"
+  // COMANDO 4: Desmarcar/Cancelar Cliente ou Horário por Ordem da Proprietária
+  // Exemplo: "desmarcar cliente Mariana dia 18/10 15h", "desmarcar o horário das 14hs dia 03/11" ou "desmarcar Mariana"
   if (
     lower.startsWith('desmarcar') ||
+    lower.startsWith('desmarca') ||
     lower.startsWith('cancelar horário') ||
     lower.startsWith('cancelar horario') ||
-    lower.includes('desmarcar cliente')
+    lower.startsWith('cancelar agendamento') ||
+    lower.startsWith('cancelar atendimento') ||
+    lower.startsWith('cancelar cliente') ||
+    /\b(?:desmarcar|desmarca|cancelar|cancela)\s+(?:o\s+|a\s+)?(?:hor[aá]rio|agendamento|atendimento|cliente|vaga)\b/i.test(lower)
   ) {
     const reply = await handleCancelAppointmentByOwner(whatsappClient, ownerPhone, cleanText);
+    scheduleDatabaseVaultBackup();
     return { status: 'success', action: 'cancel_appointment', reply, message: reply, response: reply };
   }
 
@@ -590,6 +602,9 @@ export async function reportDailyAgenda(
   const targetDt = DateTime.fromJSDate(targetDate, { zone: tz });
   const startOfDay = targetDt.startOf('day').toJSDate();
   const endOfDay = targetDt.endOf('day').toJSDate();
+
+  // Registra a última data consultada pela Janaína para contexto em comandos subsequentes (ex: "desmarcar o horário das 14hs")
+  lastOwnerQueriedDate.set(ownerPhone, { targetDate: targetDt.toJSDate(), timestamp: Date.now() });
 
   // Se foi uma pergunta genérica ("minha agenda") sem dia específico e hoje estiver vazio,
   // mostra automaticamente o panorama dos próximos dias caso existam agendamentos futuros!
@@ -1045,34 +1060,114 @@ export async function handleBlockSlot(
  * 2. Notifica a cliente com mensagem cordial e neutra (sem expor motivos pessoais)
  * 3. Envia confirmação à Janaína
  */
+const lastOwnerQueriedDate = new Map<string, { targetDate: Date; timestamp: number }>();
+
+/**
+ * Desmarca uma cliente por comando da Janaína (por nome, por data + horário, ou apenas horário):
+ * 1. Altera status para CANCELLED no banco
+ * 2. Notifica a cliente com mensagem cordial e neutra (sem expor motivos pessoais)
+ * 3. Envia confirmação à Janaína
+ */
 export async function handleCancelAppointmentByOwner(
   whatsappClient: WhatsAppClientLike | null | undefined,
   ownerPhone: string,
   rawText: string
 ): Promise<string> {
-  // Extrai nome pesquisado (remove palavras-chave de comando)
-  const cleaned = rawText
-    .replace(/^(desmarcar|cancelar horário|cancelar horario|cancelar)\s*(cliente)?/i, '')
-    .trim();
+  const tz = SALON_CONFIG.timezone;
+  const parsedDate = parseDateFromQuery(rawText);
+  const hasExplicitDate = parsedDate.relativeType !== 'default';
+  const timeInfo = extractTime(rawText);
+  const targetTimeStr = timeInfo?.timeStr; // ex: "14:00"
+  const extractedName = extractClientName(rawText);
 
-  const searchName = cleaned.replace(/\b(dia|as|às|\d{1,2}[\/\-]\d{1,2}|\d{1,2}h)\b/gi, '').trim();
+  // Determina a data de referência (explícita na frase ou última data consultada pela Janaína nos últimos 15 min)
+  let effectiveDate: Date | null = hasExplicitDate ? parsedDate.targetDate : null;
+  if (!effectiveDate) {
+    const lastQueried = lastOwnerQueriedDate.get(ownerPhone);
+    if (lastQueried && Date.now() - lastQueried.timestamp < 15 * 60 * 1000) {
+      effectiveDate = lastQueried.targetDate;
+    }
+  }
 
-  // Busca agendamentos ativos compatíveis
-  const candidates = await prisma.appointment.findMany({
-    where: {
-      generalStatus: { not: 'CANCELLED' },
-      ...(searchName.length >= 2
-        ? { clientName: { contains: searchName } }
-        : {}),
-    },
-    orderBy: { appointmentDate: 'asc' },
-    take: 5,
-  });
+  const filterByTimeAndName = (list: any[]) => {
+    let filtered = list;
+    if (targetTimeStr) {
+      const [th, tm] = targetTimeStr.split(':').map(Number);
+      const targetMinOfDay = th * 60 + (tm || 0);
+      filtered = filtered.filter((apt) => {
+        const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz });
+        const startMin = aptDt.hour * 60 + aptDt.minute;
+        const dur = inferAppointmentDurationMinutes(apt.service);
+        const endMin = startMin + dur;
+        return startMin === targetMinOfDay || (targetMinOfDay >= startMin && targetMinOfDay < endMin);
+      });
+    }
+    if (extractedName && extractedName.length >= 2) {
+      const normSearch = normalizeText(extractedName);
+      filtered = filtered.filter((apt) => normalizeText(apt.clientName).includes(normSearch));
+    }
+    return filtered;
+  };
+
+  let candidates: any[] = [];
+
+  // 1. Se temos uma data específica (ex: "dia 03/11", "amanhã", "hoje", ou última data consultada)
+  if (effectiveDate) {
+    const dt = DateTime.fromJSDate(effectiveDate, { zone: tz });
+    const dayStart = dt.startOf('day').toJSDate();
+    const dayEnd = dt.endOf('day').toJSDate();
+
+    const dayApts = await prisma.appointment.findMany({
+      where: {
+        generalStatus: { not: 'CANCELLED' },
+        depositStatus: { not: 'EXPIRED' },
+        appointmentDate: { gte: dayStart, lte: dayEnd },
+      },
+      orderBy: { appointmentDate: 'asc' },
+    });
+
+    candidates = filterByTimeAndName(dayApts);
+  }
+
+  // 2. Se não encontrou na data específica (ou nenhuma data foi informada), busca em todos os agendamentos ativos
+  if (candidates.length === 0 && (extractedName || targetTimeStr)) {
+    const allActive = await prisma.appointment.findMany({
+      where: {
+        generalStatus: { not: 'CANCELLED' },
+        depositStatus: { not: 'EXPIRED' },
+      },
+      orderBy: { appointmentDate: 'asc' },
+    });
+    candidates = filterByTimeAndName(allActive);
+  }
+
+  // 3. Caso a Janaína tenha dito "Desmarcar horário das 14h" para um horário que na verdade estava BLOQUEADO (BlockedSlot)
+  if (candidates.length === 0 && targetTimeStr) {
+    const checkDate = effectiveDate || parsedDate.targetDate;
+    const dt = DateTime.fromJSDate(checkDate, { zone: tz });
+    const [th, tm] = targetTimeStr.split(':').map(Number);
+    const slotDt = dt.set({ hour: th, minute: tm || 0, second: 0, millisecond: 0 }).toJSDate();
+    const overlappingBlocks = await prisma.blockedSlot.findMany({
+      where: {
+        startTime: { lte: slotDt },
+        endTime: { gt: slotDt },
+      },
+    });
+    if (overlappingBlocks.length > 0) {
+      return await handleUnblockSlotByOwner(whatsappClient, ownerPhone, rawText);
+    }
+  }
 
   if (candidates.length === 0) {
+    const descParts: string[] = [];
+    if (extractedName) descParts.push(`cliente "${extractedName}"`);
+    if (targetTimeStr) descParts.push(`horário das ${targetTimeStr}`);
+    if (hasExplicitDate) descParts.push(`dia ${parsedDate.label}`);
+    const searchSummary = descParts.length > 0 ? descParts.join(' no ') : rawText;
+
     const notFoundMsg =
-      `Jana, não encontrei nenhum agendamento ativo com o termo "${searchName || cleaned}".\n\n` +
-      `Digite "Minha agenda" para ver a lista de clientes marcadas e me diga exatamente o nome da cliente que deseja desmarcar. 💕`;
+      `Jana, não encontrei nenhum agendamento ativo para ${searchSummary}.\n\n` +
+      `Digite *"Minha agenda"* ou *"Agenda dia DD/MM"* para ver os atendimentos marcados! 💕`;
     if (whatsappClient) {
       await sendHumanizedMessage(whatsappClient, ownerPhone, notFoundMsg, 4000);
     }
@@ -1093,13 +1188,13 @@ export async function handleCancelAppointmentByOwner(
     },
   });
 
-  // 2. Notifica a cliente no WhatsApp dela com mensagem cuidadosa e neutra
+  // 2. Notifica a cliente no WhatsApp dela com mensagem cuidadosa e neutra (se tiver telefone real)
   const clientNotification =
     `Olá! Tudo bem? Aqui é a Alícia do Studio JF Designer. ✨\n\n` +
     `Passando para avisar que, por um imprevisto em nossa escala interna de atendimento, precisaremos reagendar o seu horário reservado.\n\n` +
     `Podemos verificar juntas uma nova data que fique excelente para você? Peço desculpas pelo transtorno! 💕`;
 
-  if (whatsappClient) {
+  if (whatsappClient && targetApt.whatsappPhone && !targetApt.whatsappPhone.endsWith('0000000')) {
     try {
       await sendHumanizedMessage(whatsappClient, targetApt.whatsappPhone, clientNotification, 4000);
     } catch (err) {
@@ -1108,15 +1203,19 @@ export async function handleCancelAppointmentByOwner(
   }
 
   // 3. Confirmação executiva para a Janaína
-  const targetDt = DateTime.fromJSDate(targetApt.appointmentDate, { zone: SALON_CONFIG.timezone });
-  const formattedAptDate = targetDt.toFormat("dd/MM 'às' HH:mm");
+  const targetDt = DateTime.fromJSDate(targetApt.appointmentDate, { zone: tz });
+  const durMin = inferAppointmentDurationMinutes(targetApt.service);
+  const endDt = targetDt.plus({ minutes: durMin });
+  const formattedAptDate = `${targetDt.toFormat('dd/MM/yyyy')} das ${targetDt.toFormat('HH:mm')} às ${endDt.toFormat('HH:mm')}`;
   const ownerConfirm =
-    `✅ *Atendimento Desmarcado!*\n\n` +
-    `O horário da cliente *${targetApt.clientName}* (${formattedAptDate}) foi cancelado e retirado da sua grade.\n\n` +
-    `Enviei uma mensagem neutra e cuidadosa para a cliente solicitando um novo dia. 💅✨`;
+    `✅ *Atendimento Desmarcado com Sucesso, Jana!* ✨\n\n` +
+    `👤 *Cliente:* ${targetApt.clientName}\n` +
+    `💅 *Procedimento:* ${targetApt.service}\n` +
+    `🗓️ *Horário Liberado:* ${formattedAptDate}\n\n` +
+    `O agendamento foi cancelado e a vaga das *${targetDt.toFormat('HH:mm')}* já está livre novamente na sua grade! 💕`;
 
   if (whatsappClient) {
-    await sendHumanizedMessage(whatsappClient, ownerPhone, ownerConfirm, 5000);
+    await sendHumanizedMessage(whatsappClient, ownerPhone, ownerConfirm, 4500);
   }
   return ownerConfirm;
 }
