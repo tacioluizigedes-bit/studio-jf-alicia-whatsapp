@@ -1195,6 +1195,24 @@
       }
     }
 
+    async function deleteAppointmentItem(id, clientName) {
+      if (!confirm(`Deseja excluir definitivamente o registro de "${clientName}" da lista?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/appointments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          showToast('Registro excluído com sucesso.');
+          fetchDashboardData();
+        } else {
+          showToast(result.error || 'Erro ao excluir registro.', 'error');
+        }
+      } catch {
+        showToast('Erro ao excluir registro.', 'error');
+      }
+    }
+
     function renderTable() {
       const tbody = document.getElementById('appointmentTableBody');
       const mobileList = document.getElementById('appointmentMobileList');
@@ -1202,14 +1220,31 @@
 
       let filtered = rawAppointments;
 
-      if (currentFilter === 'PENDING') {
+      if (currentFilter === 'ALL') {
+        // Na visão principal (Todos), oculta agendamentos desmarcados/expirados para não poluir a agenda ativa
+        filtered = filtered.filter(item =>
+          item.isBlockedSlot ||
+          (item.generalStatus !== 'CANCELLED' && item.overallStatus !== 'CANCELLED' && item.depositStatus !== 'EXPIRED')
+        );
+      } else if (currentFilter === 'PENDING') {
         filtered = filtered.filter(item => 
+          !item.isBlockedSlot &&
           item.depositStatus === 'PENDING' && 
           item.generalStatus !== 'CANCELLED' && 
           item.overallStatus !== 'CANCELLED'
         );
-      } else if (currentFilter !== 'ALL') {
-        filtered = filtered.filter(item => item.depositStatus === currentFilter);
+      } else if (currentFilter === 'EXPIRED') {
+        filtered = filtered.filter(item =>
+          !item.isBlockedSlot &&
+          (item.depositStatus === 'EXPIRED' || item.generalStatus === 'CANCELLED' || item.overallStatus === 'CANCELLED')
+        );
+      } else {
+        filtered = filtered.filter(item =>
+          !item.isBlockedSlot &&
+          item.depositStatus === currentFilter &&
+          item.generalStatus !== 'CANCELLED' &&
+          item.overallStatus !== 'CANCELLED'
+        );
       }
 
       if (search) {
@@ -1268,12 +1303,21 @@
           `;
         }
 
+        const isCancelledOrExpired =
+          item.generalStatus === 'CANCELLED' ||
+          item.overallStatus === 'CANCELLED' ||
+          item.depositStatus === 'EXPIRED';
+
         const profileBadge = item.isFirstAppointment
           ? `<span class="text-[10px] bg-purple-500/20 text-purple-300 font-semibold px-2 py-0.5 rounded-full border border-purple-500/30">✨ 1ª Vez</span>`
           : `<span class="text-[10px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30">💖 Recorrente</span>`;
 
         let statusBadge = '';
-        if (item.depositStatus === 'EXEMPT') {
+        if (isCancelledOrExpired) {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            ❌ Desmarcado / Cancelado
+          </span>`;
+        } else if (item.depositStatus === 'EXEMPT') {
           statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             ✨ Isenta de Sinal (Cliente Antiga)
           </span>`;
@@ -1301,10 +1345,6 @@
             </span>
             <div class="mt-1">${timeBadge}</div>
           </div>`;
-        } else if (item.depositStatus === 'EXPIRED') {
-          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-            ❌ Expirado / Cancelado
-          </span>`;
         }
 
         const cleanPhone = (item.whatsappPhone || '').replace(/\D/g, '');
@@ -1315,7 +1355,14 @@
         const safeService = escapeQuotes(item.service);
 
         let actionButtons = '';
-        if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
+        if (isCancelledOrExpired) {
+          actionButtons = `
+            <span class="text-xs text-slate-500 font-medium mr-2">Slot Liberado</span>
+            <button onclick="deleteAppointmentItem('${item.id}', '${safeName}')" title="Excluir definitivamente" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-950/60 text-rose-400 border border-dark-600 text-xs font-semibold transition">
+              🗑️ Excluir
+            </button>
+          `;
+        } else if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
           actionButtons += `
             <button onclick="openConfirmModal('${item.id}', '${safeName}', '${safeService}', ${item.depositAmount})" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-md shadow-emerald-600/20">
               Aprovar Sinal
@@ -1335,14 +1382,13 @@
           `;
         } else if (item.depositStatus === 'CONFIRMED' || item.depositStatus === 'EXEMPT') {
           actionButtons = `
-            <span class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
+            <span class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1 mr-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
               Garantido
             </span>
-          `;
-        } else {
-          actionButtons = `
-            <span class="text-xs text-slate-500 font-medium">Slot Liberado</span>
+            <button onclick="openCancelModal('${item.id}')" title="Desmarcar atendimento" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-900/40 text-rose-400 border border-dark-600 text-xs font-semibold transition">
+              Desmarcar
+            </button>
           `;
         }
 
@@ -1407,6 +1453,11 @@
           `;
         }
 
+        const isCancelledOrExpired =
+          item.generalStatus === 'CANCELLED' ||
+          item.overallStatus === 'CANCELLED' ||
+          item.depositStatus === 'EXPIRED';
+
         const profileBadge = item.isFirstAppointment
           ? `<span class="text-[10px] bg-purple-500/20 text-purple-300 font-semibold px-2 py-0.5 rounded-full border border-purple-500/30 shrink-0">✨ 1ª Vez</span>`
           : `<span class="text-[10px] bg-pink-500/20 text-pink-300 font-semibold px-2 py-0.5 rounded-full border border-pink-500/30 shrink-0">💖 Recorrente</span>`;
@@ -1415,7 +1466,12 @@
         let mobileTimeAlert = '';
         let cardBorderClass = 'border-dark-600';
 
-        if (item.depositStatus === 'EXEMPT') {
+        if (isCancelledOrExpired) {
+          cardBorderClass = 'border-rose-500/25';
+          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            ❌ Desmarcado / Cancelado
+          </span>`;
+        } else if (item.depositStatus === 'EXEMPT') {
           cardBorderClass = 'border-emerald-500/30';
           mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             ✨ Isenta (Antiga)
@@ -1442,11 +1498,6 @@
           } else if (item.timeLeftMinutes !== null) {
             mobileTimeAlert = `<div class="text-[11px] text-slate-400 mt-1 text-right">⏳ ${item.timeLeftMinutes} min restantes</div>`;
           }
-        } else if (item.depositStatus === 'EXPIRED') {
-          cardBorderClass = 'border-rose-500/25';
-          mobileStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-            ❌ Expirado / Cancelado
-          </span>`;
         }
 
         const cleanPhone = (item.whatsappPhone || '').replace(/\D/g, '');
@@ -1457,7 +1508,16 @@
         const safeService = escapeQuotes(item.service);
 
         let mobileFooterActions = '';
-        if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
+        if (isCancelledOrExpired) {
+          mobileFooterActions = `
+            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between text-xs text-slate-500">
+              <span>Vaga liberada na grade</span>
+              <button onclick="deleteAppointmentItem('${item.id}', '${safeName}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-rose-400 hover:text-rose-300 text-[11px] font-semibold border border-dark-600">
+                🗑️ Excluir
+              </button>
+            </div>
+          `;
+        } else if (item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') {
           mobileFooterActions = `
             <div class="pt-3 border-t border-dark-600 flex flex-col gap-2">
               <button onclick="openConfirmModal('${item.id}', '${safeName}', '${safeService}', ${item.depositAmount})" class="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2">
@@ -1485,12 +1545,6 @@
               <button onclick="openCancelModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-rose-400/90 hover:text-rose-300 text-[11px] font-semibold border border-dark-600">
                 Desmarcar
               </button>
-            </div>
-          `;
-        } else {
-          mobileFooterActions = `
-            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between text-xs text-slate-500">
-              <span>Vaga liberada automaticamente</span>
             </div>
           `;
         }

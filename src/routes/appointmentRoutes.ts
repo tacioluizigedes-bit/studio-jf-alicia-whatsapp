@@ -131,6 +131,26 @@ appointmentRouter.patch('/:id/cancel', async (req: Request, res: Response) => {
 });
 
 /**
+ * DELETE /api/appointments/:id
+ * Exclusão definitiva de agendamento (ex: duplicado ou cancelado).
+ */
+appointmentRouter.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await appointmentService.deleteAppointment(id);
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    console.error(`Erro ao excluir agendamento ${req.params.id}:`, error);
+    const statusCode = error?.message?.includes('não encontrado') ? 404 : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error?.message || 'Erro ao excluir agendamento.',
+    });
+  }
+});
+
+/**
  * GET /api/dashboard/weekly
  * Retorna dados agregados com metrics e schedule para renderização completa do dashboard semanal.
  */

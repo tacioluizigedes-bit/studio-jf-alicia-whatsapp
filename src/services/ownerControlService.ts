@@ -1345,8 +1345,19 @@ export async function handleOwnerDirectBooking(
     return askTimeMsg;
   }
 
+  // Se a Janaína especificou uma data explícita, salva no contexto; se omitiu a data, usa a última data que ela estava consultando/montando (até 15 min)
+  let baseDate = parsedDate.targetDate;
+  if (parsedDate.relativeType !== 'default') {
+    lastOwnerQueriedDate.set(ownerPhone, { targetDate: baseDate, timestamp: Date.now() });
+  } else {
+    const recentCtx = lastOwnerQueriedDate.get(ownerPhone);
+    if (recentCtx && Date.now() - recentCtx.timestamp < 15 * 60 * 1000) {
+      baseDate = recentCtx.targetDate;
+    }
+  }
+
   const [hourStr, minStr] = timeInfo.timeStr.split(':');
-  const targetDt = DateTime.fromJSDate(parsedDate.targetDate, { zone: tz }).set({
+  const targetDt = DateTime.fromJSDate(baseDate, { zone: tz }).set({
     hour: parseInt(hourStr, 10),
     minute: parseInt(minStr || '0', 10),
     second: 0,
@@ -1380,6 +1391,32 @@ export async function handleOwnerDirectBooking(
   const weekdayRaw = targetDt.setLocale('pt-BR').toFormat('cccc');
   const capWeekday = weekdayRaw.charAt(0).toUpperCase() + weekdayRaw.slice(1);
   const formattedDateTime = `${targetDt.toFormat('dd/MM/yyyy')} (${capWeekday}) das ${targetDt.toFormat('HH:mm')} às ${endDt.toFormat('HH:mm')} (${durationLabel})`;
+
+  // 0. Evita duplicidade caso a Janaína reenvie o agendamento da mesma cliente corrigindo a data ou o procedimento
+  if (extractedName) {
+    const normNewClient = normalizeText(clientName);
+    const recentCandidates = await prisma.appointment.findMany({
+      where: {
+        generalStatus: { not: 'CANCELLED' },
+      },
+    });
+    const tenMinAgo = Date.now() - 10 * 60 * 1000;
+    const duplicateIds = recentCandidates
+      .filter((apt) => {
+        if (normalizeText(apt.clientName) !== normNewClient) return false;
+        const isSameDateTime = apt.appointmentDate.getTime() === startJs.getTime();
+        const isJustCreatedByOwner =
+          apt.confirmedBy?.includes('Jana') && apt.createdAt && apt.createdAt.getTime() >= tenMinAgo;
+        return isSameDateTime || isJustCreatedByOwner;
+      })
+      .map((apt) => apt.id);
+
+    if (duplicateIds.length > 0) {
+      await prisma.appointment.deleteMany({
+        where: { id: { in: duplicateIds } },
+      });
+    }
+  }
 
   // 1. Verifica se já existe outra cliente agendada cujo tempo de procedimento conflite com este horário
   const dayStart = targetDt.startOf('day').toJSDate();

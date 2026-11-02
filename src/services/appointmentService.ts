@@ -844,6 +844,21 @@ export class AppointmentService {
   }
 
   /**
+   * Exclusão definitiva de agendamento (ex: duplicado ou cancelado)
+   */
+  async deleteAppointment(id: string) {
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new Error(`Agendamento com ID ${id} não encontrado.`);
+    }
+    await prisma.appointment.delete({ where: { id } });
+    return {
+      success: true,
+      message: 'Agendamento excluído definitivamente.',
+    };
+  }
+
+  /**
    * Rotina de expiração automática: cancela agendamentos PENDING cujo prazo expirou
    */
   async expirePendingDeposits() {
@@ -927,6 +942,7 @@ export class AppointmentService {
           where: {
             appointmentDate: { gte: startJS, lte: endJS },
             depositStatus: 'CONFIRMED',
+            generalStatus: { not: 'CANCELLED' },
           },
           _sum: {
             depositAmount: true,
@@ -940,6 +956,7 @@ export class AppointmentService {
           where: {
             appointmentDate: { gte: startJS, lte: endJS },
             depositStatus: 'EXEMPT',
+            generalStatus: { not: 'CANCELLED' },
           },
           _sum: {
             totalAmount: true,
@@ -961,7 +978,10 @@ export class AppointmentService {
           where: { appointmentDate: { gte: startJS, lte: endJS }, depositStatus: 'EXEMPT', generalStatus: { not: 'CANCELLED' } },
         }),
         prisma.appointment.count({
-          where: { appointmentDate: { gte: startJS, lte: endJS }, depositStatus: 'EXPIRED' },
+          where: {
+            appointmentDate: { gte: startJS, lte: endJS },
+            OR: [{ depositStatus: 'EXPIRED' }, { generalStatus: 'CANCELLED' }],
+          },
         }),
       ]);
 
