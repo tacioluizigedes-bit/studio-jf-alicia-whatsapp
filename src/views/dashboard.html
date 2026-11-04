@@ -4174,7 +4174,7 @@
         try {
           const props = ['name', 'tel'];
           const opts = { multiple: target === 'CRM' };
-          const contacts = await (navigator as any).contacts.select(props, opts);
+          const contacts = await navigator.contacts.select(props, opts);
 
           if (!contacts || contacts.length === 0) return;
 
@@ -4361,7 +4361,7 @@
     function toggleSelectAllWhatsAppContacts() {
       const master = document.getElementById('waSelectAllCheckbox')?.checked;
       document.querySelectorAll('.wa-contact-check').forEach(chk => {
-        (chk as any).checked = master;
+        chk.checked = master;
       });
     }
 
@@ -4373,7 +4373,7 @@
     }
 
     async function submitImportSelectedWaContacts() {
-      const checkboxes = Array.from(document.querySelectorAll('.wa-contact-check:checked')) as any[];
+      const checkboxes = Array.from(document.querySelectorAll('.wa-contact-check:checked'));
       if (checkboxes.length === 0) {
         showToast('Marque pelo menos um contato para importar.', 'error');
         return;
