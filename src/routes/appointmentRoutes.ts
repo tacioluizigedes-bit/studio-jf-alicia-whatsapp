@@ -6,6 +6,7 @@ import { process24hReminders } from '../jobs/reminderJob';
 import { buildWeeklyReportMessage } from '../services/notificationService';
 import { serviceCatalogService } from '../services/serviceCatalogService';
 import { scheduleDatabaseVaultBackup } from '../services/whatsappSessionVault';
+import { getSyncedWhatsAppContacts } from '../services/whatsappConnection';
 
 export const appointmentRouter = Router();
 const appointmentService = new AppointmentService();
@@ -560,6 +561,51 @@ appointmentRouter.post('/clients/notes', async (req: Request, res: Response) => 
     return res.status(400).json({
       success: false,
       error: error?.message || 'Erro ao salvar anotações da cliente.',
+    });
+  }
+});
+
+/**
+ * GET /api/dashboard/clients/whatsapp-contacts (e /api/appointments/clients/whatsapp-contacts)
+ * Retorna contatos sincronizados pelo WhatsApp conectado (Baileys)
+ */
+appointmentRouter.get('/clients/whatsapp-contacts', async (_req: Request, res: Response) => {
+  try {
+    const contacts = getSyncedWhatsAppContacts();
+    return res.json({
+      success: true,
+      count: contacts.length,
+      contacts,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro ao carregar contatos do WhatsApp.',
+    });
+  }
+});
+
+/**
+ * POST /api/dashboard/clients/import-contacts (e /api/appointments/clients/import-contacts)
+ * Importa contatos selecionados no celular ou do WhatsApp para a base de clientes do Studio
+ */
+appointmentRouter.post('/clients/import-contacts', async (req: Request, res: Response) => {
+  try {
+    const { contacts } = req.body || {};
+    if (!contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nenhum contato informado para importação.',
+      });
+    }
+
+    const result = await appointmentService.importContactsBatch(contacts);
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro ao importar contatos.',
     });
   }
 });

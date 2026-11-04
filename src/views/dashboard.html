@@ -432,9 +432,17 @@
             Toque em qualquer cliente para abrir a <strong>Ficha Completa (Home | Atendimentos por Mês | Cobranças | Gerar Nota)</strong>.
           </p>
         </div>
-        <button onclick="openQuickBookModal('BOOK')" class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 shrink-0">
-          <span>➕ Agendar Cliente</span>
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" onclick="openPhoneContactsPicker()" class="w-full sm:w-auto min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-500/15 hover:bg-pink-500/25 text-pink-300 border border-pink-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0 transition">
+            <span>📱 Puxar da Agenda do Telefone</span>
+          </button>
+          <button type="button" onclick="openWhatsAppContactsModal()" class="w-full sm:w-auto min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0 transition">
+            <span>💬 Puxar do WhatsApp</span>
+          </button>
+          <button onclick="openQuickBookModal('BOOK')" class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 shrink-0">
+            <span>➕ Agendar Cliente</span>
+          </button>
+        </div>
       </div>
 
       <!-- Busca de Clientes -->
@@ -909,12 +917,22 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Nome da Cliente *</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-300">Nome da Cliente *</label>
+              <button type="button" onclick="pickContactForQuickBook()" class="text-[11px] font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+                <span>📱 Puxar Contato</span>
+              </button>
+            </div>
             <input type="text" id="qbClientName" list="clientsAutocompleteList" oninput="handleClientAutocomplete()" placeholder="Ex: Fernanda / Larissa" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
             <datalist id="clientsAutocompleteList"></datalist>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp (Opcional)</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-300">WhatsApp (Opcional)</label>
+              <button type="button" onclick="openWhatsAppContactsModal('QUICK_BOOK')" class="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                <span>💬 Do WhatsApp</span>
+              </button>
+            </div>
             <input type="tel" id="qbClientPhone" placeholder="Ex: 21999999999" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-pink-500">
           </div>
         </div>
@@ -1348,6 +1366,51 @@
         </button>
         <button type="button" onclick="window.print()" class="min-h-[42px] px-3 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow">
           <span>🖨️ Imprimir / PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SINCRONIZAR CONTATOS DO WHATSAPP (BAILEYS) -->
+  <div id="waContactsModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-dark-800 border border-dark-600 rounded-2xl max-w-lg w-full p-4 sm:p-5 shadow-2xl space-y-4 my-auto">
+      <div class="flex items-center justify-between border-b border-dark-600 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">💬</span>
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-white">Contatos do WhatsApp Conectado</h3>
+            <p class="text-[11px] text-slate-400">Selecione contatos da conta de WhatsApp da Janaína para adicionar ao CRM</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeWhatsAppContactsModal()" class="w-8 h-8 rounded-lg bg-dark-700 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+      </div>
+
+      <!-- Barra de Busca nos Contatos do WA -->
+      <div class="relative">
+        <input type="text" id="waContactsSearchInput" oninput="renderWhatsAppContactsList()" placeholder="Filtrar por nome ou número..." class="w-full min-h-[40px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 pl-9 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+
+      <!-- Ações Rápidas (Selecionar Todos / Importar Selecionados) -->
+      <div class="flex items-center justify-between text-xs pt-1">
+        <label class="flex items-center gap-2 cursor-pointer text-slate-300 font-semibold select-none">
+          <input type="checkbox" id="waSelectAllCheckbox" onchange="toggleSelectAllWhatsAppContacts()" class="w-4 h-4 accent-emerald-500 rounded">
+          <span>Selecionar todos</span>
+        </label>
+        <span id="waContactsCountBadge" class="text-slate-400 font-mono">0 contato(s)</span>
+      </div>
+
+      <!-- Lista Rolável de Contatos do WA -->
+      <div id="waContactsListContainer" class="max-h-72 overflow-y-auto divide-y divide-dark-700/80 rounded-xl border border-dark-700 bg-dark-900/60 p-1">
+        <div class="p-6 text-center text-xs text-slate-400">Carregando contatos sincronizados...</div>
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-between gap-2 pt-2 border-t border-dark-600">
+        <button type="button" onclick="closeWhatsAppContactsModal()" class="min-h-[42px] px-4 py-2 rounded-xl bg-dark-700 text-slate-300 text-xs font-semibold">
+          Fechar
+        </button>
+        <button type="button" id="btnImportSelectedWaContacts" onclick="submitImportSelectedWaContacts()" class="min-h-[42px] px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow flex items-center justify-center gap-1.5">
+          <span>📥 Importar Selecionados para o CRM</span>
         </button>
       </div>
     </div>
@@ -4091,6 +4154,260 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>📲 Disparar Agora para Janaína</span>`;
+      }
+    }
+
+    // =========================================================================
+    // INTEGRAÇÃO COM AGENDA DO TELEFONE E WHATSAPP CONECTADO
+    // =========================================================================
+    let cachedWhatsAppContacts = [];
+    let waContactTargetMode = 'CRM'; // 'CRM' | 'QUICK_BOOK'
+
+    /**
+     * Puxa contatos nativos da agenda do celular (Android / iOS / Chrome / Safari)
+     * usando a Contact Picker API padrão da Web (W3C).
+     */
+    async function openPhoneContactsPicker(target = 'CRM') {
+      const isSupported = ('contacts' in navigator && 'ContactsManager' in window);
+
+      if (isSupported) {
+        try {
+          const props = ['name', 'tel'];
+          const opts = { multiple: target === 'CRM' };
+          const contacts = await (navigator as any).contacts.select(props, opts);
+
+          if (!contacts || contacts.length === 0) return;
+
+          if (target === 'QUICK_BOOK') {
+            const first = contacts[0];
+            const name = (first.name && first.name[0]) ? first.name[0] : '';
+            const rawTel = (first.tel && first.tel[0]) ? first.tel[0] : '';
+            const cleanTel = rawTel.replace(/\D/g, '');
+            if (name) document.getElementById('qbClientName').value = name;
+            if (cleanTel) document.getElementById('qbClientPhone').value = cleanTel;
+            showToast(`Contato "${name}" preenchido no agendamento!`);
+            return;
+          }
+
+          // Modo CRM: importa os contatos selecionados
+          const formatted = contacts.map(c => {
+            const name = (c.name && c.name[0]) ? c.name[0].trim() : '';
+            const tel = (c.tel && c.tel[0]) ? c.tel[0].replace(/\D/g, '') : '';
+            return { name, phone: tel, notes: 'Importado da Agenda do Telefone' };
+          }).filter(c => c.name);
+
+          if (formatted.length === 0) {
+            showToast('Nenhum contato com nome válido selecionado.', 'error');
+            return;
+          }
+
+          showToast(`Importando ${formatted.length} contato(s)...`);
+          const res = await fetch('/api/dashboard/clients/import-contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contacts: formatted })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message || 'Contatos importados com sucesso!');
+            await fetchClientsCrm();
+          } else {
+            showToast(data.error || 'Erro ao importar contatos.', 'error');
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.warn('Contact Picker API cancelado ou indisponível:', err);
+            promptManualContactImport(target);
+          }
+        }
+      } else {
+        // Fallback rápido e amigável para navegadores de desktop ou sem Contact Picker API
+        promptManualContactImport(target);
+      }
+    }
+
+    function pickContactForQuickBook() {
+      openPhoneContactsPicker('QUICK_BOOK');
+    }
+
+    function promptManualContactImport(target = 'CRM') {
+      const input = prompt(
+        '📱 PUXAR DA AGENDA DO TELEFONE\n\nDigite ou cole o Nome e WhatsApp da Cliente:\n(Ex: Mariana Silva 21998877665)',
+        ''
+      );
+      if (!input || !input.trim()) return;
+
+      const digits = input.replace(/\D/g, '');
+      const name = input.replace(/\d+/g, '').replace(/[\(\)\-\+]/g, '').trim() || `Cliente ${digits.slice(-4)}`;
+      const phone = digits;
+
+      if (target === 'QUICK_BOOK') {
+        if (name) document.getElementById('qbClientName').value = name;
+        if (phone) document.getElementById('qbClientPhone').value = phone;
+        showToast(`Contato "${name}" inserido no formulário!`);
+      } else {
+        fetch('/api/dashboard/clients/import-contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contacts: [{ name, phone, notes: 'Inserido Manualmente / Agenda' }] })
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              showToast(`"${name}" adicionada ao CRM de clientes!`);
+              fetchClientsCrm();
+            } else {
+              showToast(data.error || 'Erro ao adicionar contato.', 'error');
+            }
+          })
+          .catch(() => showToast('Erro ao importar contato.', 'error'));
+      }
+    }
+
+    /**
+     * Abre modal de contatos puxados da conta oficial do WhatsApp conectada
+     */
+    async function openWhatsAppContactsModal(target = 'CRM') {
+      waContactTargetMode = target;
+      const modal = document.getElementById('waContactsModal');
+      const listEl = document.getElementById('waContactsListContainer');
+      const countBadge = document.getElementById('waContactsCountBadge');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      listEl.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">Consultando contatos sincronizados no WhatsApp...</div>`;
+
+      try {
+        const res = await fetch('/api/dashboard/clients/whatsapp-contacts');
+        const data = await res.json();
+        cachedWhatsAppContacts = data.contacts || [];
+
+        if (countBadge) {
+          countBadge.innerText = `${cachedWhatsAppContacts.length} contato(s)`;
+        }
+
+        renderWhatsAppContactsList();
+      } catch (err) {
+        listEl.innerHTML = `<div class="p-6 text-center text-xs text-rose-400">Erro ao carregar contatos do WhatsApp. Verifique se o WhatsApp está conectado na aba Conexão.</div>`;
+      }
+    }
+
+    function closeWhatsAppContactsModal() {
+      const modal = document.getElementById('waContactsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function renderWhatsAppContactsList() {
+      const listEl = document.getElementById('waContactsListContainer');
+      const search = (document.getElementById('waContactsSearchInput')?.value || '').toLowerCase().trim();
+      if (!listEl) return;
+
+      let filtered = cachedWhatsAppContacts;
+      if (search) {
+        filtered = filtered.filter(c =>
+          (c.name || '').toLowerCase().includes(search) ||
+          (c.notify || '').toLowerCase().includes(search) ||
+          (c.phone || '').includes(search)
+        );
+      }
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-6 text-center text-xs text-slate-400">
+            Nenhum contato encontrado no WhatsApp com o filtro informado.
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((c, idx) => {
+        const displayName = c.name || c.notify || `WhatsApp ${c.phone.slice(-4)}`;
+        const safeName = escapeQuotes(displayName);
+        const safePhone = escapeQuotes(c.phone);
+
+        if (waContactTargetMode === 'QUICK_BOOK') {
+          return `
+            <div class="p-3 flex items-center justify-between gap-2 hover:bg-dark-800 transition cursor-pointer" onclick="selectWaContactForQuickBook('${safeName}', '${safePhone}')">
+              <div class="flex items-center gap-2.5">
+                <span class="text-base text-emerald-400">👤</span>
+                <div>
+                  <div class="text-xs font-bold text-white">${displayName}</div>
+                  <div class="text-[11px] font-mono text-slate-400">${c.phone}</div>
+                </div>
+              </div>
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                Selecionar
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <label class="p-3 flex items-center justify-between gap-2 hover:bg-dark-800 transition cursor-pointer select-none">
+            <div class="flex items-center gap-2.5">
+              <input type="checkbox" data-phone="${safePhone}" data-name="${safeName}" class="wa-contact-check w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+              <div>
+                <div class="text-xs font-bold text-white">${displayName}</div>
+                <div class="text-[11px] font-mono text-slate-400">${c.phone}</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-500 font-mono">WhatsApp</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function toggleSelectAllWhatsAppContacts() {
+      const master = document.getElementById('waSelectAllCheckbox')?.checked;
+      document.querySelectorAll('.wa-contact-check').forEach(chk => {
+        (chk as any).checked = master;
+      });
+    }
+
+    function selectWaContactForQuickBook(name, phone) {
+      if (name) document.getElementById('qbClientName').value = name;
+      if (phone) document.getElementById('qbClientPhone').value = phone;
+      closeWhatsAppContactsModal();
+      showToast(`Contato "${name}" selecionado para o agendamento!`);
+    }
+
+    async function submitImportSelectedWaContacts() {
+      const checkboxes = Array.from(document.querySelectorAll('.wa-contact-check:checked')) as any[];
+      if (checkboxes.length === 0) {
+        showToast('Marque pelo menos um contato para importar.', 'error');
+        return;
+      }
+
+      const contacts = checkboxes.map(chk => ({
+        name: chk.dataset.name,
+        phone: chk.dataset.phone,
+        notes: 'Sincronizado da Agenda do WhatsApp'
+      }));
+
+      const btn = document.getElementById('btnImportSelectedWaContacts');
+      btn.disabled = true;
+      btn.innerHTML = `<span>Importando...</span>`;
+
+      try {
+        const res = await fetch('/api/dashboard/clients/import-contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contacts })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Contatos importados com sucesso!');
+          closeWhatsAppContactsModal();
+          await fetchClientsCrm();
+        } else {
+          showToast(data.error || 'Erro ao importar contatos.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao importar contatos.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>📥 Importar Selecionados para o CRM</span>`;
       }
     }
 

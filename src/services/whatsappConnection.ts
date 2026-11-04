@@ -44,6 +44,49 @@ export const AUTH_FOLDER = process.env.BAILEYS_AUTH_DIR
   ? path.resolve(process.env.BAILEYS_AUTH_DIR)
   : path.resolve(process.cwd(), 'auth_info_baileys');
 
+// Cache em memória dos contatos sincronizados via WhatsApp (Baileys)
+export interface WhatsAppContactItem {
+  id: string; // JID, ex: 5521999999999@s.whatsapp.net
+  phone: string; // apenas dígitos (ex: 5521999999999)
+  name?: string;
+  notify?: string;
+  verifiedName?: string;
+}
+
+const syncedWhatsAppContacts = new Map<string, WhatsAppContactItem>();
+
+/**
+ * Retorna lista de contatos do WhatsApp conectados e sincronizados
+ */
+export function getSyncedWhatsAppContacts(): WhatsAppContactItem[] {
+  return Array.from(syncedWhatsAppContacts.values()).filter(c => c.phone && c.phone.length >= 8);
+}
+
+/**
+ * Atualiza ou insere contatos no cache em memória
+ */
+export function registerWhatsAppContacts(contacts: Array<any>) {
+  if (!Array.isArray(contacts)) return;
+  for (const c of contacts) {
+    if (!c || !c.id || typeof c.id !== 'string') continue;
+    if (c.id.endsWith('@g.us') || c.id === 'status@broadcast') continue;
+
+    const cleanDigits = c.id.split('@')[0].replace(/\D/g, '');
+    if (!cleanDigits || cleanDigits.length < 8) continue;
+
+    const existing: WhatsAppContactItem | undefined = syncedWhatsAppContacts.get(cleanDigits);
+    const name = c.name || c.notify || c.verifiedName || (existing ? existing.name : undefined);
+
+    syncedWhatsAppContacts.set(cleanDigits, {
+      id: c.id,
+      phone: cleanDigits,
+      name: name || undefined,
+      notify: c.notify || (existing ? existing.notify : undefined),
+      verifiedName: c.verifiedName || (existing ? existing.verifiedName : undefined)
+    });
+  }
+}
+
 let activeSocket: WASocket | null = null;
 let connectionStatus: 'disconnected' | 'connecting' | 'qr_ready' | 'connected' = 'disconnected';
 let latestQrCode: string | null = null;
@@ -447,6 +490,14 @@ export async function initWhatsAppConnection(skipVaultRestore: boolean = false):
       scheduleSessionVaultBackup(AUTH_FOLDER, 8000);
     });
 
+    // Monitoramento de contatos sincronizados pelo WhatsApp
+    sock.ev.on('contacts.upsert', (contacts: any) => {
+      registerWhatsAppContacts(contacts);
+    });
+    sock.ev.on('contacts.update', (contacts: any) => {
+      registerWhatsAppContacts(contacts);
+    });
+
     // Monitoramento do estado da conexão
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -648,6 +699,8 @@ export default {
   sendPresenceUpdate,
   markRead,
   getWhatsAppConnectionState,
+  getSyncedWhatsAppContacts,
+  registerWhatsAppContacts,
   baileysClientAdapter,
   STUDIO_OFFICIAL_NUMBER,
   OWNER_PERSONAL_NUMBER,

@@ -1783,6 +1783,98 @@ export class AppointmentService {
       message: 'Anotações da ficha da cliente salvas com sucesso!',
     };
   }
+
+  /**
+   * Cadastra ou atualiza um cliente direto a partir da agenda do telefone ou WhatsApp
+   */
+  async importContactAsClient(clientName: string, phone: string, notes?: string) {
+    const cleanName = (clientName || '').trim();
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    if (!cleanName) throw new Error('Nome do contato é obrigatório.');
+
+    // Procura se já existe algum agendamento para este cliente ou número
+    const existing = await prisma.appointment.findFirst({
+      where: {
+        OR: [
+          { clientName: { equals: cleanName } },
+          ...(cleanPhone.length >= 8 ? [{ whatsappPhone: { contains: cleanPhone.slice(-8) } }] : [])
+        ]
+      },
+      orderBy: { appointmentDate: 'desc' }
+    });
+
+    if (existing) {
+      // Atualiza o telefone se estiver vazio ou com zeros
+      const currentPhone = (existing.whatsappPhone || '').replace(/\D/g, '');
+      if ((!currentPhone || currentPhone.endsWith('00000000')) && cleanPhone) {
+        await prisma.appointment.update({
+          where: { id: existing.id },
+          data: { whatsappPhone: cleanPhone }
+        });
+      }
+      return {
+        success: true,
+        isNew: false,
+        name: existing.clientName,
+        phone: existing.whatsappPhone || cleanPhone,
+        message: `Cliente "${cleanName}" já constava no sistema e foi atualizada.`
+      };
+    }
+
+    // Cria registro de cliente importado do telefone
+    const tz = SALON_CONFIG.timezone;
+    const nowDt = DateTime.now().setZone(tz).toJSDate();
+    const formattedPhone = cleanPhone ? (cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`) : '';
+    const noteText = notes ? `[Contato Importado] ${notes}` : `[Contato Importado da Agenda do Telefone]`;
+
+    const created = await prisma.appointment.create({
+      data: {
+        clientName: cleanName,
+        whatsappPhone: formattedPhone,
+        service: 'Cliente Cadastrada (Agenda do Telefone)',
+        appointmentDate: nowDt,
+        depositDeadline: nowDt,
+        totalAmount: 0,
+        depositAmount: 0,
+        depositStatus: 'EXEMPT',
+        generalStatus: 'CONFIRMED',
+        notes: noteText
+      }
+    });
+
+    return {
+      success: true,
+      isNew: true,
+      id: created.id,
+      name: cleanName,
+      phone: formattedPhone,
+      message: `Contato "${cleanName}" importado para a lista de clientes com sucesso!`
+    };
+  }
+
+  /**
+   * Importa múltiplos contatos em lote
+   */
+  async importContactsBatch(contacts: Array<{ name: string; phone?: string; notes?: string }>) {
+    if (!Array.isArray(contacts)) return { success: false, imported: 0 };
+    let imported = 0;
+    let existing = 0;
+    for (const c of contacts) {
+      if (!c || !c.name) continue;
+      try {
+        const res = await this.importContactAsClient(c.name, c.phone || '', c.notes);
+        if (res.isNew) imported++;
+        else existing++;
+      } catch {}
+    }
+    return {
+      success: true,
+      imported,
+      existing,
+      total: imported + existing,
+      message: `${imported} novo(s) contato(s) adicionado(s) e ${existing} já existente(s) sincronizado(s).`
+    };
+  }
 }
 
 export const defaultAppointmentService = new AppointmentService();
