@@ -652,6 +652,12 @@ export async function initWhatsAppConnection(skipVaultRestore: boolean = false):
           jidCache.set(fromNumber, remoteJid);
           lastMessageKeyCache.set(fromNumber, msg.key);
 
+          // Registra o remetente nos contatos sincronizados
+          const pushName = msg.pushName || (msg as any).verifiedBizName;
+          registerWhatsAppContacts([
+            { id: remoteJid, name: pushName, notify: pushName }
+          ]);
+
           // 4. Extrai o conteúdo textual da mensagem
           const messageBody = extractMessageText(msg);
           if (!messageBody) continue;
