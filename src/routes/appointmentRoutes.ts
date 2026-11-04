@@ -527,3 +527,40 @@ appointmentRouter.get('/clients', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * PATCH /api/dashboard/:id/toggle-payment (e /api/appointments/:id/toggle-payment)
+ * Dá baixa ou reabre o pagamento de um atendimento na tela de Cobranças (MinhaAgenda)
+ */
+appointmentRouter.patch('/:id/toggle-payment', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { forcePaid } = req.body || {};
+    const result = await appointmentService.toggleAppointmentPaidStatus(id, forcePaid);
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao atualizar status de pagamento.',
+    });
+  }
+});
+
+/**
+ * POST /api/dashboard/clients/notes (e /api/appointments/clients/notes)
+ * Salva anotações / ficha de anamnese na ficha da cliente
+ */
+appointmentRouter.post('/clients/notes', async (req: Request, res: Response) => {
+  try {
+    const { clientName, noteText } = req.body || {};
+    const result = await appointmentService.saveClientProfileNote(clientName, noteText);
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao salvar anotações da cliente.',
+    });
+  }
+});
+

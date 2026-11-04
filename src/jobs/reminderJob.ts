@@ -1,23 +1,25 @@
 import cron from 'node-cron';
 import { prisma } from '../lib/prisma';
 import { send24hReminderNotification, sendWeeklyClientReminderNotification } from '../services/notificationService';
+import { WhatsAppService } from '../services/whatsappService';
 import { DateTime } from 'luxon';
 import { SALON_CONFIG } from '../config/salonConfig';
 
+const whatsappService = new WhatsAppService();
+
 let cronTask: any = null;
 let mondayCronTask: any = null;
+let arrivalCronTask: any = null;
 
 /**
  * Função responsável por buscar agendamentos de todas as clientes para o dia seguinte (1 dia antes / ~24h)
- * e disparar lembretes de confirmação de presença.
+ * e disparar lembretes de confirmação de presença TANTO para a cliente QUANTO para a Janaína.
  */
 export async function process24hReminders() {
   try {
     const tz = SALON_CONFIG.timezone;
     const now = DateTime.now().setZone(tz);
 
-    // Abrange todos os agendamentos de amanhã (1 dia antes) a partir das 08h do dia anterior,
-    // ou dentro da janela de até 26h de antecedência
     const tomorrowStart = now.plus({ days: 1 }).startOf('day').toJSDate();
     const tomorrowEnd = now.plus({ days: 1 }).endOf('day').toJSDate();
     const windowStart = now.hour >= 8 ? tomorrowStart : now.plus({ hours: 23 }).toJSDate();
@@ -45,14 +47,31 @@ export async function process24hReminders() {
     let sentCount = 0;
     for (const apt of upcomingAppointments) {
       try {
-        const sent = await send24hReminderNotification(apt);
-        if (sent) {
+        const cleanPhone = (apt.whatsappPhone || '').replace(/\D/g, '');
+        let clientSent = false;
+        if (cleanPhone.length >= 10 && !cleanPhone.endsWith('00000000')) {
+          clientSent = await send24hReminderNotification(apt);
+        }
+
+        // Também envia lembrete de véspera para a Janaína
+        let ownerSent = false;
+        if (SALON_CONFIG.ownerPhone) {
+          const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz }).setLocale('pt-BR');
+          const ownerMsg =
+            `📅 *Lembrete de Atendimento Confirmado (Amanhã):*\n` +
+            `👤 *${apt.clientName}* - ${apt.service}\n` +
+            `🗓️ ${aptDt.toFormat('dd/MM/yyyy')} às ${aptDt.toFormat('HH:mm')}\n` +
+            `💰 Valor: R$ ${Number(apt.totalAmount).toFixed(2).replace('.', ',')}`;
+          ownerSent = await whatsappService.sendMessage(SALON_CONFIG.ownerPhone, ownerMsg);
+        }
+
+        if (clientSent || ownerSent) {
           await prisma.appointment.update({
             where: { id: apt.id },
             data: { reminderSent24h: true },
           });
           sentCount++;
-          console.log(`✅ [CRON LEMBRETE 1 DIA ANTES] Lembrete entregue para ${apt.clientName} (${apt.whatsappPhone}).`);
+          console.log(`✅ [CRON LEMBRETE 1 DIA ANTES] Lembrete entregue para ${apt.clientName} e Janaína.`);
         }
       } catch (err) {
         console.error(`❌ [CRON LEMBRETE 1 DIA ANTES] Erro ao enviar lembrete para ${apt.id}:`, err);
@@ -67,6 +86,89 @@ export async function process24hReminders() {
 }
 
 /**
+ * Dispara o lembrete na hora/proximidade do atendimento (estilo MinhaAgenda:
+ * "Atendimento: Michele Novo - Manutenção... 03/11/2026 às 19:00")
+ * tanto para a Janaína quanto para a cliente!
+ */
+export async function processArrivalTimeReminders() {
+  try {
+    const tz = SALON_CONFIG.timezone;
+    const now = DateTime.now().setZone(tz);
+    const windowStart = now.minus({ minutes: 5 }).toJSDate();
+    const windowEnd = now.plus({ minutes: 20 }).toJSDate();
+
+    const imminentAppointments = await prisma.appointment.findMany({
+      where: {
+        generalStatus: { not: 'CANCELLED' },
+        depositStatus: { in: ['CONFIRMED', 'EXEMPT'] },
+        appointmentDate: {
+          gte: windowStart,
+          lte: windowEnd,
+        },
+      },
+      orderBy: { appointmentDate: 'asc' },
+    });
+
+    const pendingArrival = imminentAppointments.filter(
+      (apt) => !(apt.notes || '').includes('[LembreteHoraEnviado]')
+    );
+
+    if (pendingArrival.length === 0) {
+      return { processedCount: 0 };
+    }
+
+    let sentCount = 0;
+    for (const apt of pendingArrival) {
+      try {
+        const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz }).setLocale('pt-BR');
+        const dateStr = aptDt.toFormat('dd/MM/yyyy');
+        const timeStr = aptDt.toFormat('HH:mm');
+
+        // 1. Alerta estilo MinhaAgenda para a Janaína
+        let ownerSent = false;
+        if (SALON_CONFIG.ownerPhone) {
+          const ownerAlert =
+            `🔔 *Atendimento: ${apt.clientName} - ${apt.service}*\n` +
+            `🗓️ ${dateStr} às ${timeStr}\n` +
+            `💰 Valor: R$ ${Number(apt.totalAmount).toFixed(2).replace('.', ',')}`;
+          ownerSent = await whatsappService.sendMessage(SALON_CONFIG.ownerPhone, ownerAlert);
+        }
+
+        // 2. Lembrete de horário para a Cliente (se tiver telefone válido)
+        let clientSent = false;
+        const cleanPhone = (apt.whatsappPhone || '').replace(/\D/g, '');
+        if (cleanPhone.length >= 10 && !cleanPhone.endsWith('00000000')) {
+          const clientAlert =
+            `✨ *Lembrete de Atendimento — Studio JF*\n\n` +
+            `Oi, *${apt.clientName}*! Passando para lembrar do seu atendimento confirmado de *${apt.service}* hoje (*${dateStr}*) às *${timeStr}*.\n` +
+            `📍 Local: ${SALON_CONFIG.address}\n\n` +
+            `Estamos te esperando! 💖`;
+          clientSent = await whatsappService.sendMessage(apt.whatsappPhone, clientAlert);
+        }
+
+        if (ownerSent || clientSent) {
+          const updatedNotes = apt.notes
+            ? `${apt.notes} | [LembreteHoraEnviado]`
+            : '[LembreteHoraEnviado]';
+          await prisma.appointment.update({
+            where: { id: apt.id },
+            data: { notes: updatedNotes },
+          });
+          sentCount++;
+        }
+      } catch (err) {
+        console.error(`❌ [LEMBRETE HORA] Erro ao disparar alerta de horário para ${apt.id}:`, err);
+      }
+    }
+
+    return { processedCount: sentCount };
+  } catch (error) {
+    console.error('❌ [LEMBRETE HORA] Erro na verificação de lembretes do horário:', error);
+    return { processedCount: 0, error };
+  }
+}
+
+/**
  * Função responsável por enviar na Segunda-feira o lembrete da semana para TODAS as clientes
  * que estão agendadas na semana vigente (Segunda a Sábado).
  */
@@ -75,7 +177,6 @@ export async function processMondayWeeklyClientReminders(forceRun: boolean = fal
     const tz = SALON_CONFIG.timezone;
     const now = DateTime.now().setZone(tz);
 
-    // Só executa nas segundas-feiras (weekday === 1 no Luxon) a partir das 08h, a menos que forceRun = true
     if (!forceRun && (now.weekday !== 1 || now.hour < 8)) {
       return { processedCount: 0 };
     }
@@ -133,16 +234,19 @@ export async function processMondayWeeklyClientReminders(forceRun: boolean = fal
 
 /**
  * Inicia os jobs recorrentes de lembrete:
- * 1) Lembrete 1 dia antes (verificado a cada hora)
- * 2) Lembrete de Segunda-feira para todas as clientes agendadas na semana ('0 9 * * 1')
+ * 1) Lembrete 1 dia antes (verificado a cada hora — envia para Cliente e Janaína)
+ * 2) Lembrete na hora do atendimento (verificado a cada 5 minutos — envia para Janaína e Cliente)
+ * 3) Lembrete de Segunda-feira para todas as clientes agendadas na semana ('0 9 * * 1')
  */
 export function start24hReminderJob() {
   const tz = SALON_CONFIG.timezone || 'America/Sao_Paulo';
-  console.log('⏱️ [JOB] Rotina de Lembrete (1 dia antes + Segunda-feira semanal para clientes) agendada.');
+  console.log('⏱️ [JOB] Rotinas de Lembrete MinhaAgenda (24h antes + Hora do Atendimento + Segunda-feira) agendadas.');
 
-  // Executa na subida do servidor
   process24hReminders().catch((err) =>
     console.error('Erro na primeira execução do job de lembrete 24h:', err)
+  );
+  processArrivalTimeReminders().catch((err) =>
+    console.error('Erro na primeira execução do job de lembrete de horário:', err)
   );
   processMondayWeeklyClientReminders().catch((err) =>
     console.error('Erro na verificação inicial do lembrete semanal de segunda-feira:', err)
@@ -159,6 +263,15 @@ export function start24hReminderJob() {
     { timezone: tz }
   );
 
+  // Verifica a cada 5 minutos se há atendimento começando agora / em 15 min (alerta MinhaAgenda)
+  arrivalCronTask = cron.schedule(
+    '*/5 * * * *',
+    async () => {
+      await processArrivalTimeReminders();
+    },
+    { timezone: tz }
+  );
+
   // Disparo dedicado toda segunda-feira às 09:00
   mondayCronTask = cron.schedule(
     '0 9 * * 1',
@@ -169,5 +282,5 @@ export function start24hReminderJob() {
     { timezone: tz }
   );
 
-  return { cronTask, mondayCronTask };
+  return { cronTask, mondayCronTask, arrivalCronTask };
 }

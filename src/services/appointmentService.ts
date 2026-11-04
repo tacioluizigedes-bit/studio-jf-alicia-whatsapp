@@ -1009,6 +1009,11 @@ export class AppointmentService {
       }
       const aptDuration = inferAppointmentDurationMinutes(cleanService);
       const aptEndDt = aptDt.plus({ minutes: aptDuration });
+      const totalNum = Number(apt.totalAmount);
+      const depositNum = Number(apt.depositAmount);
+      const isPaidInFull = Boolean((apt.notes || '').includes('[PAGO_TOTAL]'));
+      const amountPaid = isPaidInFull ? totalNum : apt.depositStatus === 'CONFIRMED' ? depositNum : 0;
+      const amountDue = Math.max(0, Number((totalNum - amountPaid).toFixed(2)));
 
       return {
         id: apt.id,
@@ -1022,12 +1027,17 @@ export class AppointmentService {
         durationLabel: formatDurationLabel(aptDuration),
         appointmentDate: apt.appointmentDate.toISOString(),
         dateKey: aptDt.toISODate(),
+        monthKey: aptDt.toFormat('yyyy-MM'),
+        shortDateWithWeekday: `${aptDt.toFormat('dd/MM/yy')} (${aptDt.toFormat('ccc')})`,
         startTimeStr: aptDt.toFormat('HH:mm'),
         endTimeStr: aptEndDt.toFormat('HH:mm'),
         formattedDate: aptDt.toFormat('dd/MM (cccc)'),
         formattedTime: `${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}`,
-        totalAmount: Number(apt.totalAmount),
-        depositAmount: Number(apt.depositAmount),
+        totalAmount: totalNum,
+        depositAmount: depositNum,
+        isPaidInFull,
+        amountPaid,
+        amountDue,
         depositStatus: apt.depositStatus,
         generalStatus: apt.generalStatus,
         overallStatus: apt.generalStatus === 'PRE_SCHEDULED' ? 'PRE_BOOKED' : apt.generalStatus,
@@ -1540,10 +1550,8 @@ export class AppointmentService {
    */
   async getClientsCrmList() {
     const tz = SALON_CONFIG.timezone;
+    const nowDt = DateTime.now().setZone(tz).setLocale('pt-BR');
     const all = await prisma.appointment.findMany({
-      where: {
-        generalStatus: { not: 'CANCELLED' },
-      },
       orderBy: { appointmentDate: 'desc' },
     });
 
@@ -1557,19 +1565,38 @@ export class AppointmentService {
         whatsappPhone: string;
         appointmentsCount: number;
         visitsCount: number;
+        cancelledCount: number;
+        noShowCount: number;
         totalSpent: number;
+        totalPaid: number;
+        totalDue: number;
         lastAppointmentDate: string;
         lastVisitIso: string;
         lastVisitFormatted: string;
+        lastVisitLongFormatted: string;
+        daysSinceLastVisit: number;
+        firstVisitFormatted: string;
         lastService: string;
+        clientNotes: string;
         isRecurring: boolean;
         history: Array<{
           id: string;
           service: string;
+          dateKey: string;
+          monthKey: string;
+          monthLabel: string;
+          shortDateWithWeekday: string;
+          startTimeStr: string;
           formattedDate: string;
           formattedTime: string;
           totalAmount: number;
+          depositAmount: number;
+          isPaidInFull: boolean;
+          amountPaid: number;
+          amountDue: number;
           depositStatus: string;
+          generalStatus: string;
+          professional: string;
         }>;
       }
     >();
@@ -1587,10 +1614,16 @@ export class AppointmentService {
       const dur = inferAppointmentDurationMinutes(apt.service);
       const aptEnd = aptDt.plus({ minutes: dur });
       const amt = Number(apt.totalAmount);
+      const depAmt = Number(apt.depositAmount);
+      const isCancelled = apt.generalStatus === 'CANCELLED' || apt.depositStatus === 'EXPIRED';
+      const isPaidInFull = Boolean((apt.notes || '').includes('[PAGO_TOTAL]'));
+      const amountPaid = isCancelled ? 0 : isPaidInFull ? amt : apt.depositStatus === 'CONFIRMED' ? depAmt : 0;
+      const amountDue = isCancelled ? 0 : Math.max(0, Number((amt - amountPaid).toFixed(2)));
 
       if (!map.has(normKey)) {
         const ph = apt.whatsappPhone || '5521900000000';
         const iso = apt.appointmentDate.toISOString();
+        const diffDays = Math.max(0, Math.floor(nowDt.diff(aptDt, 'days').days));
         map.set(normKey, {
           key: normKey,
           name: cleanName,
@@ -1599,41 +1632,155 @@ export class AppointmentService {
           whatsappPhone: ph,
           appointmentsCount: 0,
           visitsCount: 0,
+          cancelledCount: 0,
+          noShowCount: 0,
           totalSpent: 0,
+          totalPaid: 0,
+          totalDue: 0,
           lastAppointmentDate: iso,
           lastVisitIso: iso,
           lastVisitFormatted: aptDt.toFormat("dd/MM/yyyy 'às' HH:mm"),
+          lastVisitLongFormatted: `${aptDt.toFormat("dd 'de' LLLL, yyyy")} - ${diffDays} dia(s) atrás`,
+          daysSinceLastVisit: diffDays,
+          firstVisitFormatted: aptDt.toFormat("d 'de' LLLL, yyyy"),
           lastService: apt.service,
+          clientNotes: '',
           isRecurring: apt.depositStatus === 'EXEMPT' || !apt.isFirstAppointment,
           history: [],
         });
       }
 
       const entry = map.get(normKey)!;
-      entry.visitsCount += 1;
-      entry.appointmentsCount = entry.visitsCount;
-      entry.totalSpent += amt;
+      entry.firstVisitFormatted = aptDt.toFormat("d 'de' LLLL, yyyy");
+
+      const noteMatch = (apt.notes || '').match(/\[FichaCliente:\s*([^\]]+)\]/i);
+      if (noteMatch && !entry.clientNotes) {
+        entry.clientNotes = noteMatch[1].trim();
+      }
+
       if (apt.whatsappPhone && apt.whatsappPhone !== '5521900000000' && entry.whatsappPhone === '5521900000000') {
         entry.whatsappPhone = apt.whatsappPhone;
         entry.phone = apt.whatsappPhone;
       }
-      if (apt.depositStatus === 'EXEMPT' || entry.visitsCount > 1) {
-        entry.isRecurring = true;
+
+      if (isCancelled) {
+        entry.cancelledCount += 1;
+      } else {
+        entry.visitsCount += 1;
+        entry.appointmentsCount = entry.visitsCount;
+        entry.totalSpent = Number((entry.totalSpent + amt).toFixed(2));
+        entry.totalPaid = Number((entry.totalPaid + amountPaid).toFixed(2));
+        entry.totalDue = Number((entry.totalDue + amountDue).toFixed(2));
+        if (apt.depositStatus === 'EXEMPT' || entry.visitsCount > 1) {
+          entry.isRecurring = true;
+        }
+        const monthRaw = aptDt.toFormat("LLLL 'de' yyyy");
+        const monthLabel = monthRaw.charAt(0).toUpperCase() + monthRaw.slice(1);
+        entry.history.push({
+          id: apt.id,
+          service: apt.service,
+          dateKey: aptDt.toISODate() || '',
+          monthKey: aptDt.toFormat('yyyy-MM'),
+          monthLabel,
+          shortDateWithWeekday: `${aptDt.toFormat('dd/MM/yy')} (${aptDt.toFormat('ccc')})`,
+          startTimeStr: aptDt.toFormat('HH:mm'),
+          formattedDate: aptDt.toFormat('dd/MM/yyyy (ccc)'),
+          formattedTime: `${aptDt.toFormat('HH:mm')} às ${aptEnd.toFormat('HH:mm')}`,
+          totalAmount: amt,
+          depositAmount: depAmt,
+          isPaidInFull,
+          amountPaid,
+          amountDue,
+          depositStatus: apt.depositStatus,
+          generalStatus: apt.generalStatus,
+          professional: 'Janaina',
+        });
       }
-      entry.history.push({
-        id: apt.id,
-        service: apt.service,
-        formattedDate: aptDt.toFormat('dd/MM/yyyy (ccc)'),
-        formattedTime: `${aptDt.toFormat('HH:mm')} às ${aptEnd.toFormat('HH:mm')}`,
-        totalAmount: amt,
-        depositStatus: apt.depositStatus,
-      });
     }
 
-    const clients = Array.from(map.values()).sort((a, b) => a.clientName.localeCompare(b.clientName, 'pt-BR'));
+    const clients = Array.from(map.values())
+      .filter((c) => c.visitsCount > 0 || c.cancelledCount > 0)
+      .sort((a, b) => a.clientName.localeCompare(b.clientName, 'pt-BR'));
+
+    const totalReceivable = Number(
+      clients.reduce((acc, c) => acc + c.totalDue, 0).toFixed(2)
+    );
+
     return {
       totalClients: clients.length,
+      totalReceivable,
       clients,
+    };
+  }
+
+  /**
+   * Alterna o status de pagamento integral de um atendimento (Tela de Cobranças MinhaAgenda)
+   */
+  async toggleAppointmentPaidStatus(id: string, forcePaid?: boolean) {
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new Error('Atendimento não encontrado.');
+    }
+    const currentNotes = existing.notes || '';
+    const currentlyPaid = currentNotes.includes('[PAGO_TOTAL]');
+    const nextPaid = forcePaid !== undefined ? forcePaid : !currentlyPaid;
+
+    let updatedNotes = currentNotes.replace(/\s*\|\s*\[PAGO_TOTAL\]/g, '').replace(/\[PAGO_TOTAL\]/g, '').trim();
+    if (nextPaid) {
+      updatedNotes = updatedNotes ? `${updatedNotes} | [PAGO_TOTAL]` : '[PAGO_TOTAL]';
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: { notes: updatedNotes },
+    });
+
+    return {
+      success: true,
+      id: updated.id,
+      isPaidInFull: nextPaid,
+      message: nextPaid
+        ? 'Recebimento integral registrado com sucesso!'
+        : 'Atendimento marcado como pendente de recebimento (Devendo).',
+    };
+  }
+
+  /**
+   * Salva anotação / ficha de anamnese na ficha da cliente
+   */
+  async saveClientProfileNote(clientName: string, noteText: string) {
+    const cleanName = (clientName || '').trim();
+    if (!cleanName) throw new Error('Informe o nome da cliente.');
+
+    const latest = await prisma.appointment.findFirst({
+      where: {
+        clientName: { contains: cleanName },
+      },
+      orderBy: { appointmentDate: 'desc' },
+    });
+
+    if (!latest) {
+      throw new Error('Nenhum atendimento encontrado para vincular a anotação desta cliente.');
+    }
+
+    const cleanNote = (noteText || '').replace(/[\[\]]/g, '').trim();
+    const baseNotes = (latest.notes || '').replace(/\s*\|\s*\[FichaCliente:[^\]]*\]/gi, '').replace(/\[FichaCliente:[^\]]*\]/gi, '').trim();
+    const newNotes = cleanNote
+      ? baseNotes
+        ? `${baseNotes} | [FichaCliente: ${cleanNote}]`
+        : `[FichaCliente: ${cleanNote}]`
+      : baseNotes;
+
+    await prisma.appointment.update({
+      where: { id: latest.id },
+      data: { notes: newNotes },
+    });
+
+    return {
+      success: true,
+      clientName: cleanName,
+      clientNotes: cleanNote,
+      message: 'Anotações da ficha da cliente salvas com sucesso!',
     };
   }
 }
