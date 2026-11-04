@@ -2329,7 +2329,7 @@
       const durText = formatDurationHuman(durationMins);
 
       if (item.isBlockedSlot) {
-        const isCustomBlock = String(item.id || '').startsWith('block-');
+        const isCustomBlock = !String(item.id || '').startsWith('blocked-tuesday-');
         const safeReason = escapeQuotes(item.service || 'Bloqueio de Agenda');
         return `
           <div class="bg-striped-blocked rounded-2xl border border-amber-500/35 p-3.5 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2619,7 +2619,7 @@
       // 1. RENDERIZAÇÃO DESKTOP (TABELA)
       tbody.innerHTML = filtered.map(item => {
         if (item.isBlockedSlot) {
-          const isCustomBlock = String(item.id || '').startsWith('block-');
+          const isCustomBlock = !String(item.id || '').startsWith('blocked-tuesday-');
           const safeReason = escapeQuotes(item.service || 'Bloqueio');
           return `
             <tr class="bg-striped-blocked text-slate-300">
@@ -2783,7 +2783,7 @@
       // 2. RENDERIZAÇÃO MOBILE & TABLET PEQUENO (CARDS VERTICAIS ERGONÔMICOS)
       mobileList.innerHTML = filtered.map(item => {
         if (item.isBlockedSlot) {
-          const isCustomBlock = String(item.id || '').startsWith('block-');
+          const isCustomBlock = !String(item.id || '').startsWith('blocked-tuesday-');
           const safeReason = escapeQuotes(item.service || 'Bloqueio');
           return `
             <div class="bg-striped-blocked rounded-2xl border border-slate-700 p-4 shadow-md space-y-2.5">
