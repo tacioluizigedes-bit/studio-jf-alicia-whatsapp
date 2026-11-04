@@ -232,4 +232,59 @@ describe('--- GESTÃO DE CATÁLOGO, PREÇOS E PROMOÇÕES PELA JANAÍNA ---', ()
     }
   });
 
+  it('10. Deve suportar criação 1-tap, edição/remarcação, bloqueio/desbloqueio e CRM de clientes estilo MinhaAgenda', async () => {
+    const { appointmentService } = require('../dist/services/appointmentService');
+    const { prisma } = require('../dist/lib/prisma');
+
+    // 1. Criar agendamento pelo painel MinhaAgenda
+    const created = await appointmentService.createOwnerDashboardAppointment({
+      clientName: 'Juliana Teste MinhaAgenda',
+      whatsappPhone: '21988887777',
+      serviceName: 'Colocação Volume Brasileiro',
+      dateStr: '2026-11-06',
+      timeStr: '10:00',
+      durationMinutes: 90,
+      totalAmount: 100,
+      depositStatus: 'EXEMPT',
+      notes: 'Criado na régua de 30 min'
+    });
+    assert.ok(created.id);
+    assert.strictEqual(created.clientName, 'Juliana Teste MinhaAgenda');
+
+    // 2. Editar / remarcar agendamento para 11:00
+    const edited = await appointmentService.editOwnerDashboardAppointment(created.id, {
+      timeStr: '11:00',
+      dateStr: '2026-11-06',
+      totalAmount: 110,
+      serviceName: 'Colocação Volume Egípcio'
+    });
+    assert.strictEqual(edited.totalAmount, 110);
+    assert.strictEqual(edited.service, 'Colocação Volume Egípcio');
+
+    // 3. Criar bloqueio na régua e depois liberar
+    const block = await appointmentService.createBlockedSlotFromDashboard({
+      dateStr: '2026-11-06',
+      startTimeStr: '15:00',
+      endTimeStr: '16:30',
+      reason: 'Consulta Médica Teste'
+    });
+    assert.ok(block.id);
+
+    // 4. Verificar que getWeeklyDashboard retorna dateKey, startTimeStr e endTimeStr
+    const dash = await appointmentService.getWeeklyDashboard('2026-11-02', '2026-11-08');
+    const foundAppt = dash.schedule.find(s => s.id === created.id);
+    assert.ok(foundAppt);
+    assert.strictEqual(foundAppt.dateKey, '2026-11-06');
+    assert.strictEqual(foundAppt.startTimeStr, '11:00');
+
+    // 5. Verificar CRM de clientes
+    const clientsRes = await appointmentService.getClientsCrmList();
+    assert.ok(Array.isArray(clientsRes.clients));
+    assert.ok(clientsRes.clients.some(c => c.name === 'Juliana Teste MinhaAgenda'));
+
+    // 6. Liberar bloqueio e limpar agendamento de teste
+    await appointmentService.deleteBlockedSlotFromDashboard(`block-${block.id}`);
+    await prisma.appointment.delete({ where: { id: created.id } }).catch(() => {});
+  });
+
 });

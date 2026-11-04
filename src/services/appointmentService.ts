@@ -1021,6 +1021,9 @@ export class AppointmentService {
         durationMinutes: aptDuration,
         durationLabel: formatDurationLabel(aptDuration),
         appointmentDate: apt.appointmentDate.toISOString(),
+        dateKey: aptDt.toISODate(),
+        startTimeStr: aptDt.toFormat('HH:mm'),
+        endTimeStr: aptEndDt.toFormat('HH:mm'),
         formattedDate: aptDt.toFormat('dd/MM (cccc)'),
         formattedTime: `${aptDt.toFormat('HH:mm')} às ${aptEndDt.toFormat('HH:mm')}`,
         totalAmount: Number(apt.totalAmount),
@@ -1053,6 +1056,10 @@ export class AppointmentService {
           whatsappPhone: 'N/A',
           service: 'Bloqueio Quinzenal de Agenda',
           appointmentDate: cursor.set({ hour: 13, minute: 0 }).toISODate(),
+          dateKey: cursor.toISODate(),
+          startTimeStr: '13:00',
+          endTimeStr: '15:30',
+          durationMinutes: 150,
           formattedDate: dateStr,
           formattedTime: '13:00 às 15:30',
           totalAmount: 0,
@@ -1079,12 +1086,17 @@ export class AppointmentService {
     dbBlockedSlots.forEach((bs) => {
       const bsDt = DateTime.fromJSDate(bs.startTime, { zone: tz }).setLocale('pt-BR');
       const bsEndDt = DateTime.fromJSDate(bs.endTime, { zone: tz }).setLocale('pt-BR');
+      const durMin = Math.max(30, Math.round(bsEndDt.diff(bsDt, 'minutes').minutes));
       schedule.push({
         id: bs.id,
         clientName: 'Compromisso Pessoal / Indisponível',
         whatsappPhone: 'N/A',
         service: bs.title || 'Bloqueio Executivo',
         appointmentDate: bs.startTime.toISOString(),
+        dateKey: bsDt.toISODate(),
+        startTimeStr: bsDt.toFormat('HH:mm'),
+        endTimeStr: bsEndDt.toFormat('HH:mm'),
+        durationMinutes: durMin,
         formattedDate: bsDt.toFormat('dd/MM (cccc)'),
         formattedTime: `${bsDt.toFormat('HH:mm')} às ${bsEndDt.toFormat('HH:mm')}`,
         totalAmount: 0,
@@ -1279,9 +1291,355 @@ export class AppointmentService {
       },
     };
   }
+
+  /**
+   * Cria agendamento diretamente pelo painel MinhaAgenda da Janaína (/dashboard)
+   */
+  async createOwnerDashboardAppointment(input: {
+    clientName: string;
+    whatsappPhone?: string;
+    service?: string;
+    serviceName?: string;
+    date?: string; // YYYY-MM-DD
+    dateStr?: string; // YYYY-MM-DD
+    time?: string; // HH:mm
+    timeStr?: string; // HH:mm
+    totalAmount: number;
+    durationMinutes?: number;
+    statusMode?: 'EXEMPT' | 'CONFIRMED' | 'PENDING';
+    depositStatus?: 'EXEMPT' | 'CONFIRMED' | 'PENDING';
+    notes?: string;
+  }) {
+    const tz = SALON_CONFIG.timezone;
+    const cleanName = (input.clientName || '').trim();
+    if (!cleanName || cleanName.length < 2) {
+      throw new Error('Informe o nome da cliente.');
+    }
+    const cleanService = (input.service || input.serviceName || '').trim();
+    if (!cleanService) {
+      throw new Error('Selecione o procedimento.');
+    }
+
+    const dStr = (input.date || input.dateStr || '').trim();
+    const tStr = (input.time || input.timeStr || '09:00').trim();
+
+    const dt = DateTime.fromISO(`${dStr}T${tStr}`, { zone: tz });
+    if (!dt.isValid) {
+      throw new Error('Data ou horário inválido.');
+    }
+
+    const rawPhone = (input.whatsappPhone || '').replace(/\D/g, '');
+    const cleanPhone = rawPhone.length >= 8 ? sanitizeToE164(rawPhone) : '5521900000000';
+    const total = Math.max(0, Number(input.totalAmount) || 0);
+    const mode = input.statusMode || input.depositStatus || 'EXEMPT';
+
+    const depositAmt =
+      mode === 'EXEMPT' ? 0 : Math.round(total * 0.3 * 100) / 100;
+    const depositStatus = mode === 'PENDING' ? 'PENDING' : mode === 'CONFIRMED' ? 'CONFIRMED' : 'EXEMPT';
+    const generalStatus = mode === 'PENDING' ? 'PRE_SCHEDULED' : 'CONFIRMED';
+
+    const created = await prisma.appointment.create({
+      data: {
+        clientName: cleanName,
+        whatsappPhone: cleanPhone,
+        service: cleanService,
+        appointmentDate: dt.toJSDate(),
+        totalAmount: new Prisma.Decimal(total),
+        depositAmount: new Prisma.Decimal(depositAmt),
+        depositStatus,
+        generalStatus,
+        depositDeadline: dt.plus({ hours: 2 }).toJSDate(),
+        confirmedAt: generalStatus === 'CONFIRMED' ? new Date() : null,
+        confirmedBy: generalStatus === 'CONFIRMED' ? 'Janaína (MinhaAgenda)' : null,
+        isFirstAppointment: mode !== 'EXEMPT',
+        notes: input.notes ? `[MinhaAgenda]: ${input.notes}` : '[Agendado pela Janaína no MinhaAgenda]',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Agendamento registrado com sucesso na agenda!',
+      id: created.id,
+      clientName: created.clientName,
+      appointment: created,
+    };
+  }
+
+  /**
+   * Edita agendamento diretamente pelo painel MinhaAgenda da Janaína (/dashboard)
+   * Permite remarcar data/horário, trocar procedimento, alterar valor, telefone ou status
+   */
+  async editOwnerDashboardAppointment(
+    id: string,
+    input: {
+      clientName?: string;
+      whatsappPhone?: string;
+      service?: string;
+      serviceName?: string;
+      date?: string; // YYYY-MM-DD
+      dateStr?: string; // YYYY-MM-DD
+      time?: string; // HH:mm
+      timeStr?: string; // HH:mm
+      totalAmount?: number;
+      durationMinutes?: number;
+      statusMode?: 'EXEMPT' | 'CONFIRMED' | 'PENDING';
+      depositStatus?: 'EXEMPT' | 'CONFIRMED' | 'PENDING';
+      notes?: string;
+    }
+  ) {
+    const tz = SALON_CONFIG.timezone;
+    const existing = await prisma.appointment.findUnique({ where: { id } });
+    if (!existing) {
+      throw new Error('Agendamento não encontrado.');
+    }
+
+    const dStr = (input.date || input.dateStr || '').trim();
+    const tStr = (input.time || input.timeStr || '').trim();
+
+    let newDateJs = existing.appointmentDate;
+    if (dStr && tStr) {
+      const dt = DateTime.fromISO(`${dStr}T${tStr}`, { zone: tz });
+      if (!dt.isValid) {
+        throw new Error('Nova data ou horário inválido.');
+      }
+      newDateJs = dt.toJSDate();
+    } else if (tStr) {
+      const currentDt = DateTime.fromJSDate(existing.appointmentDate, { zone: tz });
+      const dt = DateTime.fromISO(`${currentDt.toFormat('yyyy-MM-dd')}T${tStr}`, { zone: tz });
+      if (dt.isValid) newDateJs = dt.toJSDate();
+    }
+
+    const total =
+      input.totalAmount !== undefined ? Math.max(0, Number(input.totalAmount)) : Number(existing.totalAmount);
+
+    let depositStatus = existing.depositStatus;
+    let generalStatus = existing.generalStatus;
+    let depositAmount = Number(existing.depositAmount);
+    let isFirst = existing.isFirstAppointment;
+
+    const newMode = input.statusMode || input.depositStatus;
+    if (newMode) {
+      if (newMode === 'EXEMPT') {
+        depositStatus = 'EXEMPT';
+        generalStatus = 'CONFIRMED';
+        depositAmount = 0;
+        isFirst = false;
+      } else if (newMode === 'CONFIRMED') {
+        depositStatus = 'CONFIRMED';
+        generalStatus = 'CONFIRMED';
+        depositAmount = Math.round(total * 0.3 * 100) / 100;
+      } else if (newMode === 'PENDING') {
+        depositStatus = 'PENDING';
+        generalStatus = 'PRE_SCHEDULED';
+        depositAmount = Math.round(total * 0.3 * 100) / 100;
+      }
+    }
+
+    let cleanPhone = existing.whatsappPhone;
+    if (input.whatsappPhone !== undefined) {
+      const digits = input.whatsappPhone.replace(/\D/g, '');
+      cleanPhone = digits.length >= 8 ? sanitizeToE164(digits) : '5521900000000';
+    }
+
+    const newService = (input.service || input.serviceName || '').trim();
+
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        clientName: input.clientName ? input.clientName.trim() : existing.clientName,
+        whatsappPhone: cleanPhone,
+        service: newService ? newService : existing.service,
+        appointmentDate: newDateJs,
+        totalAmount: new Prisma.Decimal(total),
+        depositAmount: new Prisma.Decimal(depositAmount),
+        depositStatus,
+        generalStatus,
+        isFirstAppointment: isFirst,
+        confirmedAt: generalStatus === 'CONFIRMED' ? existing.confirmedAt || new Date() : existing.confirmedAt,
+        confirmedBy: generalStatus === 'CONFIRMED' ? existing.confirmedBy || 'Janaína (MinhaAgenda)' : existing.confirmedBy,
+        notes: input.notes !== undefined ? input.notes : existing.notes,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Agendamento atualizado com sucesso!',
+      id: updated.id,
+      service: updated.service,
+      totalAmount: Number(updated.totalAmount),
+      appointment: updated,
+    };
+  }
+
+  /**
+   * Cria bloqueio de horário / compromisso pessoal pelo painel MinhaAgenda (/dashboard)
+   */
+  async createBlockedSlotFromDashboard(input: {
+    date?: string; // YYYY-MM-DD
+    dateStr?: string; // YYYY-MM-DD
+    startTime?: string; // HH:mm
+    startTimeStr?: string; // HH:mm
+    endTime?: string; // HH:mm
+    endTimeStr?: string; // HH:mm
+    fullDay?: boolean;
+    title?: string;
+    reason?: string;
+  }) {
+    const tz = SALON_CONFIG.timezone;
+    const dStr = (input.date || input.dateStr || '').trim();
+    const startStr = input.fullDay ? '08:00' : input.startTime || input.startTimeStr || '09:00';
+    const endStr = input.fullDay ? '22:00' : input.endTime || input.endTimeStr || '10:00';
+
+    const startDt = DateTime.fromISO(`${dStr}T${startStr}`, { zone: tz });
+    let endDt = DateTime.fromISO(`${dStr}T${endStr}`, { zone: tz });
+    if (!startDt.isValid || !endDt.isValid) {
+      throw new Error('Data ou horário do bloqueio inválido.');
+    }
+    if (endDt <= startDt) {
+      endDt = startDt.plus({ minutes: 60 });
+    }
+
+    const titleLabel = (input.title || input.reason || 'Compromisso Pessoal').trim();
+
+    const block = await prisma.blockedSlot.create({
+      data: {
+        title: titleLabel,
+        reason: (input.reason || 'INTERNAL_UNAVAILABLE').trim(),
+        startTime: startDt.toJSDate(),
+        endTime: endDt.toJSDate(),
+        isRecurring: false,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Horário bloqueado na grade com sucesso!',
+      id: block.id,
+      block,
+    };
+  }
+
+  /**
+   * Remove bloqueio de horário pelo painel MinhaAgenda (/dashboard)
+   */
+  async deleteBlockedSlotFromDashboard(id: string) {
+    const cleanId = String(id || '').replace(/^block-/, '');
+    const existing = await prisma.blockedSlot.findUnique({ where: { id: cleanId } });
+    if (!existing) {
+      throw new Error('Bloqueio não encontrado no banco (bloqueios quinzenais fixos não podem ser excluídos por aqui).');
+    }
+    await prisma.blockedSlot.delete({ where: { id: cleanId } });
+    return {
+      success: true,
+      message: 'Horário desbloqueado e liberado na grade!',
+    };
+  }
+
+  /**
+   * Retorna lista consolidada de clientes (CRM MinhaAgenda) com histórico de atendimentos
+   */
+  async getClientsCrmList() {
+    const tz = SALON_CONFIG.timezone;
+    const all = await prisma.appointment.findMany({
+      where: {
+        generalStatus: { not: 'CANCELLED' },
+      },
+      orderBy: { appointmentDate: 'desc' },
+    });
+
+    const map = new Map<
+      string,
+      {
+        key: string;
+        name: string;
+        clientName: string;
+        phone: string;
+        whatsappPhone: string;
+        appointmentsCount: number;
+        visitsCount: number;
+        totalSpent: number;
+        lastAppointmentDate: string;
+        lastVisitIso: string;
+        lastVisitFormatted: string;
+        lastService: string;
+        isRecurring: boolean;
+        history: Array<{
+          id: string;
+          service: string;
+          formattedDate: string;
+          formattedTime: string;
+          totalAmount: number;
+          depositStatus: string;
+        }>;
+      }
+    >();
+
+    for (const apt of all) {
+      const cleanName = (apt.clientName || '').replace(/\s+(?:às|as|para|no|na)$/i, '').trim();
+      if (!cleanName || /^cliente/i.test(cleanName)) continue;
+
+      const normKey = cleanName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+      const aptDt = DateTime.fromJSDate(apt.appointmentDate, { zone: tz }).setLocale('pt-BR');
+      const dur = inferAppointmentDurationMinutes(apt.service);
+      const aptEnd = aptDt.plus({ minutes: dur });
+      const amt = Number(apt.totalAmount);
+
+      if (!map.has(normKey)) {
+        const ph = apt.whatsappPhone || '5521900000000';
+        const iso = apt.appointmentDate.toISOString();
+        map.set(normKey, {
+          key: normKey,
+          name: cleanName,
+          clientName: cleanName,
+          phone: ph,
+          whatsappPhone: ph,
+          appointmentsCount: 0,
+          visitsCount: 0,
+          totalSpent: 0,
+          lastAppointmentDate: iso,
+          lastVisitIso: iso,
+          lastVisitFormatted: aptDt.toFormat("dd/MM/yyyy 'às' HH:mm"),
+          lastService: apt.service,
+          isRecurring: apt.depositStatus === 'EXEMPT' || !apt.isFirstAppointment,
+          history: [],
+        });
+      }
+
+      const entry = map.get(normKey)!;
+      entry.visitsCount += 1;
+      entry.appointmentsCount = entry.visitsCount;
+      entry.totalSpent += amt;
+      if (apt.whatsappPhone && apt.whatsappPhone !== '5521900000000' && entry.whatsappPhone === '5521900000000') {
+        entry.whatsappPhone = apt.whatsappPhone;
+        entry.phone = apt.whatsappPhone;
+      }
+      if (apt.depositStatus === 'EXEMPT' || entry.visitsCount > 1) {
+        entry.isRecurring = true;
+      }
+      entry.history.push({
+        id: apt.id,
+        service: apt.service,
+        formattedDate: aptDt.toFormat('dd/MM/yyyy (ccc)'),
+        formattedTime: `${aptDt.toFormat('HH:mm')} às ${aptEnd.toFormat('HH:mm')}`,
+        totalAmount: amt,
+        depositStatus: apt.depositStatus,
+      });
+    }
+
+    const clients = Array.from(map.values()).sort((a, b) => a.clientName.localeCompare(b.clientName, 'pt-BR'));
+    return {
+      totalClients: clients.length,
+      clients,
+    };
+  }
 }
 
 export const defaultAppointmentService = new AppointmentService();
+export const appointmentService = defaultAppointmentService;
 
 export async function createOrUpdateAppointment(input: CreateOrUpdateAppointmentInput) {
   return defaultAppointmentService.createOrUpdateAppointment(input);

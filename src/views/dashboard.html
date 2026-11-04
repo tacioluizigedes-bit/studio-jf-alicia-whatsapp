@@ -2,9 +2,15 @@
 <html lang="pt-BR" class="dark overflow-x-hidden">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Studio JF Lash e Designer - Dashboard de Agendamentos & Procedimentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>MinhaAgenda Studio JF — Painel da Janaína Ferreira</title>
   <link rel="icon" type="image/png" href="/logo-jf.png">
+  <link rel="apple-touch-icon" href="/logo-jf.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b141a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MinhaAgenda JF">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -63,26 +69,26 @@
     }
   </style>
 </head>
-<body class="bg-[#0b141a] text-slate-100 min-h-screen flex flex-col antialiased overflow-x-hidden">
+<body class="bg-[#0b141a] text-slate-100 min-h-screen flex flex-col antialiased overflow-x-hidden pb-24 sm:pb-10">
 
-  <!-- TOP NAVBAR (MOBILE-FIRST & RESPONSIVA) -->
+  <!-- TOP NAVBAR (MOBILE-FIRST & RESPONSIVA — ESTILO MINHAAGENDA STUDIO JF) -->
   <header class="border-b border-dark-600 bg-dark-800/95 backdrop-blur sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-2 sm:min-h-[76px] flex flex-col justify-center">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center justify-between gap-2.5 sm:gap-3">
         <!-- Marca & Status -->
-        <div class="flex items-center gap-3 sm:gap-3.5 flex-1 min-w-0">
-          <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl p-0.5 flex items-center justify-center" style="background: radial-gradient(circle, rgba(0,0,0,0.95) 0%, rgba(5,8,12,0.68) 58%, rgba(17,27,33,0) 100%);">
+        <div class="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+          <div class="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl p-0.5 flex items-center justify-center" style="background: radial-gradient(circle, rgba(0,0,0,0.95) 0%, rgba(5,8,12,0.68) 58%, rgba(17,27,33,0) 100%);">
             <img src="/logo-jf.png" alt="Logo JF Lash e Designer" class="w-full h-full object-contain scale-105 drop-shadow-[0_3px_10px_rgba(0,0,0,0.85)]" />
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-nowrap">
-              <h1 class="text-sm sm:text-base lg:text-lg font-bold text-white tracking-wide whitespace-nowrap">Studio JF Designer</h1>
-              <span class="hidden sm:inline-block text-[10px] sm:text-xs bg-pink-500/10 text-pink-400 font-semibold px-2 py-0.5 rounded-full border border-pink-500/20 shrink-0">
-                Gestão Operacional
+              <h1 class="text-sm sm:text-base lg:text-lg font-extrabold text-white tracking-wide whitespace-nowrap">MinhaAgenda JF</h1>
+              <span class="hidden sm:inline-block text-[10px] sm:text-xs bg-amber-500/15 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                ✨ Studio Janaína Ferreira
               </span>
             </div>
             <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 truncate mt-0.5">
-              <span class="truncate">Atendente: <strong class="text-pink-300">Alícia</strong></span>
+              <span class="truncate">Secretária IA: <strong class="text-pink-300">Alícia 24/7</strong></span>
               <span class="text-slate-600">•</span>
               <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400 shrink-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -92,8 +98,14 @@
           </div>
         </div>
 
-        <!-- Ações Rápidas (Apenas Atualizar + Menu no Celular / Completas no Desktop) -->
+        <!-- Ações Rápidas (Botão + Agendar sempre visível no Mobile e Desktop) -->
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <!-- Botão + Agendar / Bloquear Rápido -->
+          <button onclick="openQuickBookModal('BOOK')" title="Novo Agendamento ou Bloqueio de Horário" class="h-10 px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-pink-600/25 flex items-center justify-center gap-1.5 transition">
+            <span class="text-sm leading-none">➕</span>
+            <span>Agendar</span>
+          </button>
+
           <!-- Indicador de sincronização Desktop -->
           <div class="hidden lg:flex items-center gap-2 text-xs text-slate-400 bg-dark-700 px-3 py-1.5 rounded-lg border border-dark-600">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -107,12 +119,6 @@
             <span class="hidden md:inline">Atualizar</span>
           </button>
 
-          <!-- Botão Atalho Aba Procedimentos (Oculto no celular pois já tem a aba logo abaixo e no menu) -->
-          <button onclick="switchDashboardTab('CATALOG')" title="Gerenciar Procedimentos, Tempos e Valores" aria-label="Gerenciar Procedimentos" class="hidden md:flex px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 active:scale-95 text-purple-300 border border-purple-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
-            <span class="text-sm leading-none">💅</span>
-            <span class="hidden lg:inline">Procedimentos & Valores</span>
-          </button>
-
           <!-- Botão Resumo Semanal Janaína (Desktop/Tablet) -->
           <button onclick="openWeeklyReportModal()" title="Resumo Semanal da Janaína via WhatsApp" aria-label="Resumo Semanal Janaína" class="hidden md:flex px-3 py-2 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 active:scale-95 text-pink-400 border border-pink-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">📊</span>
@@ -122,13 +128,7 @@
           <!-- Botão Página de Agendamento da Cliente (Desktop/Tablet) -->
           <a href="/agendar" target="_blank" title="Abrir Página de Seleção de Horários da Cliente" aria-label="Agendamento Online" class="hidden md:flex px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
             <span class="text-sm leading-none">🗓️</span>
-            <span>Agendar Online</span>
-          </a>
-
-          <!-- Botão Central de Conexão 24/7 (Desktop/Tablet) -->
-          <a href="/qr" title="Central de Conexão Permanente 24/7 (Código de 8 Dígitos sem câmera)" aria-label="Conexão 24/7" class="hidden md:flex px-3 py-2 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 active:scale-95 text-teal-300 border border-teal-500/30 text-xs font-semibold items-center justify-center gap-1.5 transition">
-            <span class="text-sm leading-none">🔑</span>
-            <span>Conexão 24/7</span>
+            <span>Link Clientes</span>
           </a>
 
           <!-- Botão Abrir Chat Alícia (Desktop/Tablet) -->
@@ -146,22 +146,22 @@
 
       <!-- Menu Colapsável Mobile (Drawer/Dropdown) -->
       <div id="mobileActionDrawer" class="hidden md:hidden mt-2.5 pt-2.5 border-t border-dark-600 grid grid-cols-1 gap-2">
-        <a href="/qr" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center justify-between">
-          <span class="flex items-center gap-2"><span>🔑</span> Conexão 24/7 (Parear por Código sem QR Code)</span>
-          <span>➔</span>
-        </a>
-        <button onclick="switchDashboardTab('CATALOG'); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-purple-600/15 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-between">
-          <span class="flex items-center gap-2"><span>💅</span> Procedimentos, Tempos e Valores</span>
+        <button onclick="openQuickBookModal('BOOK'); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-600/20 text-pink-300 border border-pink-500/30 text-xs font-bold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>➕</span> Lançar Novo Agendamento ou Bloqueio</span>
           <span>➔</span>
         </button>
         <a href="/agendar" target="_blank" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-between">
-          <span class="flex items-center gap-2"><span>🗓️</span> Abrir Agendamento Online (/agendar)</span>
+          <span class="flex items-center gap-2"><span>🗓️</span> Abrir Link de Agendamento das Clientes (/agendar)</span>
           <span>↗</span>
         </a>
-        <button onclick="openWeeklyReportModal(); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-pink-600/15 text-pink-300 border border-pink-500/30 text-xs font-semibold flex items-center justify-between">
-          <span class="flex items-center gap-2"><span>📊</span> Resumo Semanal da Janaína</span>
+        <button onclick="openWeeklyReportModal(); toggleMobileMenu();" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-purple-600/15 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>📊</span> Resumo Semanal da Janaína no WhatsApp</span>
           <span>➔</span>
         </button>
+        <a href="/qr" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-teal-500/15 text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center justify-between">
+          <span class="flex items-center gap-2"><span>🔑</span> Central Completa de Conexão 24/7 (/qr)</span>
+          <span>➔</span>
+        </a>
         <a href="/" target="_blank" class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-600/15 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-between">
           <span class="flex items-center gap-2"><span>💬</span> Abrir Simulador de Chat da Alícia</span>
           <span>↗</span>
@@ -171,166 +171,393 @@
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 flex flex-col gap-4 sm:gap-6 w-full">
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 flex-1 flex flex-col gap-4 sm:gap-5 w-full">
 
-    <!-- SELETOR DE ABAS PRINCIPAIS DO DASHBOARD -->
-    <div class="bg-dark-800 p-1.5 rounded-2xl border border-dark-600 flex flex-col sm:flex-row gap-1.5 shadow-lg">
-      <button id="tabBtnAppointments" onclick="switchDashboardTab('APPOINTMENTS')" class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20">
+    <!-- SELETOR DE ABAS PRINCIPAIS DO DASHBOARD (VISÍVEL NO DESKTOP/TABLET; NO CELULAR FICA FIXO NA BARRA INFERIOR ESTILO APP) -->
+    <div class="hidden sm:flex bg-dark-800 p-1.5 rounded-2xl border border-dark-600 gap-1.5 shadow-lg overflow-x-auto no-scrollbar">
+      <button id="tabBtnAppointments" onclick="switchDashboardTab('APPOINTMENTS')" class="top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20 whitespace-nowrap">
         <span>📅</span>
-        <span>Clientes Agendadas & Sinais</span>
+        <span>Agenda (Dia & Semana)</span>
       </button>
-      <button id="tabBtnCatalog" onclick="switchDashboardTab('CATALOG')" class="flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700">
+      <button id="tabBtnClients" onclick="switchDashboardTab('CLIENTS')" class="top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700 whitespace-nowrap">
+        <span>👥</span>
+        <span>Clientes (CRM)</span>
+        <span id="clientsCountBadge" class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-extrabold">0</span>
+      </button>
+      <button id="tabBtnFinance" onclick="switchDashboardTab('FINANCE')" class="top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700 whitespace-nowrap">
+        <span>💰</span>
+        <span>Caixa & Financeiro</span>
+      </button>
+      <button id="tabBtnCatalog" onclick="switchDashboardTab('CATALOG')" class="top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700 whitespace-nowrap">
         <span>💅</span>
-        <span>Procedimentos, Tempos & Valores</span>
+        <span>Procedimentos</span>
         <span id="catalogCountBadge" class="px-2 py-0.5 rounded-full text-[11px] bg-pink-500/20 text-pink-300 border border-pink-500/30 font-extrabold">23</span>
+      </button>
+      <button id="tabBtnConnection" onclick="switchDashboardTab('CONNECTION')" class="top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700 whitespace-nowrap">
+        <span>🔑</span>
+        <span>Conexão 24/7</span>
       </button>
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ABA 1: CLIENTES AGENDADAS & SINAIS                                      -->
+    <!-- ABA 1: AGENDA MINHAAGENDA STUDIO JF (GRADE DO DIA 30MIN & SEMANA)       -->
     <!-- ======================================================================= -->
-    <div id="tabContentAppointments" class="flex flex-col gap-4 sm:gap-6">
+    <div id="tabContentAppointments" class="flex flex-col gap-3.5 sm:gap-5">
 
-      <!-- 1. NAVEGAÇÃO DE SEMANAS & PERÍODO TEMPORAL -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-dark-800 p-3.5 sm:p-4 rounded-2xl border border-dark-600 shadow-md">
-        <!-- Controles [ < ] [ Semana Atual ] [ > ] Centralizados no Mobile -->
-        <div class="flex items-center justify-center gap-2 w-full sm:w-auto">
-          <button onclick="navigateWeek(-1)" aria-label="Semana anterior" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
-          </button>
-          <button onclick="navigateCurrentWeek()" class="min-h-[44px] flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-100 text-xs sm:text-sm font-semibold border border-dark-600 transition whitespace-nowrap">
-            Semana Atual
-          </button>
-          <button onclick="navigateWeek(1)" aria-label="Próxima semana" class="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
-          </button>
+      <!-- 1. BARRA SUPERIOR DA AGENDA: SEMANA + SELETOR DE VISÃO (GRADE DO DIA vs LISTA SEMANAL) -->
+      <div class="bg-dark-800 p-3.5 sm:p-4 rounded-2xl border border-dark-600 shadow-md flex flex-col gap-3.5">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <!-- Controles [ < ] [ Semana Atual ] [ > ] -->
+          <div class="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+            <button onclick="navigateWeek(-1)" aria-label="Semana anterior" class="min-h-[42px] min-w-[42px] p-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="text-center flex-1 sm:flex-initial px-2">
+              <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Semana Selecionada</p>
+              <h2 id="periodLabel" class="text-xs sm:text-base font-extrabold text-white tracking-tight">Carregando período...</h2>
+            </div>
+            <button onclick="navigateWeek(1)" aria-label="Próxima semana" class="min-h-[42px] min-w-[42px] p-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-slate-200 hover:text-white transition border border-dark-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <button onclick="navigateCurrentWeek()" class="min-h-[42px] px-3 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 active:scale-95 text-pink-300 text-xs font-bold border border-pink-500/30 transition whitespace-nowrap">
+              Hoje
+            </button>
+          </div>
+
+          <!-- Alternador de Visão: Grade do Dia (MinhaAgenda) vs Lista da Semana + Botões Rápidos -->
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+            <div class="bg-dark-900 p-1 rounded-xl border border-dark-600 flex items-center flex-1 sm:flex-initial">
+              <button id="viewModeBtnDay" onclick="setAgendaViewMode('DAY_TIMELINE')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow">
+                <span>🕒</span>
+                <span>Grade do Dia</span>
+              </button>
+              <button id="viewModeBtnWeek" onclick="setAgendaViewMode('WEEK_LIST')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white">
+                <span>📋</span>
+                <span>Lista da Semana</span>
+              </button>
+            </div>
+
+            <button onclick="openQuickBookModal('BLOCK', selectedDateKey)" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition shrink-0">
+              <span>🔒</span>
+              <span>Bloquear Horário</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Data da Semana logo abaixo no Mobile, à direita no Desktop -->
-        <div class="text-center sm:text-right w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-dark-700/80">
-          <p class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 font-semibold">Semana Selecionada</p>
-          <h2 id="periodLabel" class="text-sm sm:text-lg font-extrabold text-white tracking-tight mt-0.5">Carregando período...</h2>
+        <!-- CARROSSEL HORIZONTAL DOS 7 DIAS DA SEMANA (SEG A DOM — ESTILO MINHAAGENDA) -->
+        <div id="dayStripContainer" class="grid grid-cols-7 gap-1.5 sm:gap-2 pt-2 border-t border-dark-700/80">
+          <!-- Preenchido via JS renderDayStrip() -->
         </div>
       </div>
 
-      <!-- 2. GRID DE CARDS DE MÉTRICAS (KPIs): 1 col Mobile | 2x2 Tablet (md) | 4 cols Desktop (lg) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <!-- Card 1: Total Agendamentos -->
-        <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total na Semana</span>
-            <span class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm shrink-0">📅</span>
+      <!-- =================================================================== -->
+      <!-- VISÃO 1A: RÉGUA DE HORÁRIOS DO DIA (30 EM 30 MIN — MINHAAGENDA)     -->
+      <!-- =================================================================== -->
+      <div id="dailyTimelineSection" class="flex flex-col gap-3">
+        <!-- Cabeçalho do Dia Selecionado + Resumo Rápido do Dia -->
+        <div class="bg-gradient-to-r from-dark-800 via-dark-800 to-purple-950/30 p-3.5 sm:p-4 rounded-2xl border border-purple-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="selectedDayTitle" class="text-sm sm:text-lg font-extrabold text-white capitalize">Carregando dia...</span>
+              <span id="selectedDayCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">0 atendimentos</span>
+              <span id="selectedDayRevenueBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">R$ 0,00 no dia</span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              💡 Toque em qualquer <strong>horário livre (🟢)</strong> abaixo para agendar uma cliente ou trancar o horário na hora.
+            </p>
           </div>
-          <div class="flex items-baseline justify-between sm:block">
-            <div id="kpiTotalCount" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap">0</div>
-            <p class="text-xs text-slate-400 sm:mt-1">Horários reservados na grade</p>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <label class="inline-flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none bg-dark-900/70 px-3 py-1.5 rounded-xl border border-dark-600">
+              <input type="checkbox" id="toggleShowFreeSlots" checked onchange="renderDailyTimeline()" class="w-3.5 h-3.5 accent-pink-500 rounded">
+              <span>Mostrar horários livres (30 min)</span>
+            </label>
+            <button onclick="openQuickBookModal('BOOK', selectedDateKey)" class="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow flex items-center gap-1 shrink-0 transition">
+              <span>+ Agendar neste dia</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista Vertical de Slots de 30 em 30 min (09:00 às 20:30) -->
+        <div id="dailyTimelineList" class="space-y-2">
+          <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+            Carregando régua de horários do dia...
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. GRID DE CARDS DE MÉTRICAS DA SEMANA (KPIs): 2x2 Mobile | 4 cols Desktop -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <!-- Card 1: Total Agendamentos -->
+        <div class="bg-dark-800 p-3.5 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Total Semana</span>
+            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs sm:text-sm shrink-0">📅</span>
+          </div>
+          <div>
+            <div id="kpiTotalCount" class="text-xl sm:text-3xl font-extrabold text-white tracking-tight whitespace-nowrap">0</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Atendimentos na semana</p>
           </div>
         </div>
 
         <!-- Card 2: Sinais Pendentes (Cliente Nova) -->
-        <div class="bg-gradient-to-br from-amber-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-amber-600/30 flex flex-col justify-between shadow-lg shadow-amber-950/20">
-          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+        <div class="bg-gradient-to-br from-amber-950/30 to-dark-800 p-3.5 sm:p-5 rounded-2xl border border-amber-600/30 flex flex-col justify-between shadow-lg shadow-amber-950/20">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
               <span class="w-2 h-2 rounded-full bg-amber-400 pulse-urgent shrink-0"></span>
-              Sinais Pendentes
+              Pendentes
             </span>
-            <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">⏳</span>
+            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">⏳</span>
           </div>
           <div>
-            <div class="flex items-baseline justify-between sm:justify-start gap-2 flex-wrap">
-              <div id="kpiPendingCount" class="text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-tight whitespace-nowrap">0</div>
-              <span id="kpiReceiptBadge" class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30 font-semibold hidden whitespace-nowrap">0 c/ comprovante</span>
+            <div class="flex items-baseline gap-1.5 flex-wrap">
+              <div id="kpiPendingCount" class="text-xl sm:text-3xl font-extrabold text-amber-300 tracking-tight whitespace-nowrap">0</div>
+              <span id="kpiReceiptBadge" class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded-full border border-blue-500/30 font-semibold hidden whitespace-nowrap">0 c/ comprovante</span>
             </div>
-            <p id="kpiPendingTotal" class="text-xs text-amber-200/80 mt-1 font-medium">Clientes de 1ª vez aguardando Pix</p>
+            <p id="kpiPendingTotal" class="text-[11px] text-amber-200/80 mt-0.5 font-medium truncate">Aguardando Pix</p>
           </div>
         </div>
 
         <!-- Card 3: Sinais Confirmados / Isentas -->
-        <div class="bg-gradient-to-br from-emerald-950/30 to-dark-800 p-4 sm:p-5 rounded-2xl border border-emerald-600/30 flex flex-col justify-between shadow-lg shadow-emerald-950/20">
-          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Confirmados & Isentas</span>
-            <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold shrink-0">✅</span>
+        <div class="bg-gradient-to-br from-emerald-950/30 to-dark-800 p-3.5 sm:p-5 rounded-2xl border border-emerald-600/30 flex flex-col justify-between shadow-lg shadow-emerald-950/20">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400">Sinais Pagos</span>
+            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">✅</span>
           </div>
-          <div class="flex items-baseline justify-between sm:block gap-2">
-            <div id="kpiConfirmedTotal" class="text-2xl sm:text-3xl font-extrabold text-emerald-300 tracking-tight whitespace-nowrap">R$ 0,00</div>
-            <p id="kpiConfirmedCount" class="text-xs text-emerald-200/80 sm:mt-1 font-medium truncate">0 agendamento(s) garantido(s)</p>
+          <div>
+            <div id="kpiConfirmedTotal" class="text-xl sm:text-3xl font-extrabold text-emerald-300 tracking-tight whitespace-nowrap">R$ 0,00</div>
+            <p id="kpiConfirmedCount" class="text-[11px] text-emerald-200/80 mt-0.5 font-medium truncate">0 garantido(s)</p>
           </div>
         </div>
 
         <!-- Card 4: Expirados / Cancelados -->
-        <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Expirados / Cancelados</span>
-            <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm font-bold shrink-0">❌</span>
+        <div class="bg-dark-800 p-3.5 sm:p-5 rounded-2xl border border-dark-600 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400">Desmarcados</span>
+            <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-xs sm:text-sm font-bold shrink-0">❌</span>
           </div>
-          <div class="flex items-baseline justify-between sm:block">
-            <div id="kpiExpiredCount" class="text-2xl sm:text-3xl font-extrabold text-slate-300 tracking-tight whitespace-nowrap">0</div>
-            <p id="kpiLossRate" class="text-xs text-slate-400 sm:mt-1 font-medium">0% taxa de cancelamento</p>
+          <div>
+            <div id="kpiExpiredCount" class="text-xl sm:text-3xl font-extrabold text-slate-300 tracking-tight whitespace-nowrap">0</div>
+            <p id="kpiLossRate" class="text-[11px] text-slate-400 mt-0.5 font-medium">0% cancelamento</p>
           </div>
         </div>
       </div>
 
-      <!-- 3. FILTROS RÁPIDOS (SCROLL HORIZONTAL SUAVE) & CAMPO DE BUSCA 100% MOBILE -->
-      <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
-        <!-- Pílulas Deslizáveis (Touch Scrollable sem scrollbar visível) -->
-        <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
-          <button onclick="setFilter('ALL')" id="filter-ALL" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition shadow-sm">
-            Todos (<span id="count-ALL">0</span>)
-          </button>
-          <button onclick="setFilter('PENDING')" id="filter-PENDING" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-            ⏳ Pendentes (<span id="count-PENDING">0</span>)
-          </button>
-          <button onclick="setFilter('EXEMPT')" id="filter-EXEMPT" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-            💖 Isentas (<span id="count-EXEMPT">0</span>)
-          </button>
-          <button onclick="setFilter('CONFIRMED')" id="filter-CONFIRMED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-            ✅ Confirmados (<span id="count-CONFIRMED">0</span>)
-          </button>
-          <button onclick="setFilter('EXPIRED')" id="filter-EXPIRED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
-            ❌ Expirados (<span id="count-EXPIRED">0</span>)
-          </button>
+      <!-- =================================================================== -->
+      <!-- VISÃO 1B: LISTA COMPLETA DA SEMANA & FILTROS DE SINAL               -->
+      <!-- =================================================================== -->
+      <div id="weeklyListSection" class="flex flex-col gap-3.5">
+        <!-- 3. FILTROS RÁPIDOS (SCROLL HORIZONTAL SUAVE) & CAMPO DE BUSCA 100% MOBILE -->
+        <div class="bg-dark-800 p-3 sm:p-4 rounded-2xl border border-dark-600 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+          <div class="flex items-center overflow-x-auto no-scrollbar py-1 gap-2 w-full md:w-auto snap-x">
+            <button onclick="setFilter('ALL')" id="filter-ALL" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold bg-pink-600 text-white transition shadow-sm">
+              Todos da Semana (<span id="count-ALL">0</span>)
+            </button>
+            <button onclick="setFilter('PENDING')" id="filter-PENDING" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+              ⏳ Pendentes (<span id="count-PENDING">0</span>)
+            </button>
+            <button onclick="setFilter('EXEMPT')" id="filter-EXEMPT" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+              💖 Isentas (<span id="count-EXEMPT">0</span>)
+            </button>
+            <button onclick="setFilter('CONFIRMED')" id="filter-CONFIRMED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+              ✅ Confirmados (<span id="count-CONFIRMED">0</span>)
+            </button>
+            <button onclick="setFilter('EXPIRED')" id="filter-EXPIRED" class="filter-pill snap-start shrink-0 whitespace-nowrap min-h-[38px] px-4 py-1.5 rounded-full text-xs font-medium bg-dark-700 text-slate-300 hover:text-white transition border border-dark-600">
+              ❌ Cancelados (<span id="count-EXPIRED">0</span>)
+            </button>
+          </div>
+
+          <!-- Barra de Busca (100% da largura no celular) -->
+          <div class="relative w-full md:w-72 shrink-0">
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar cliente, procedimento ou telefone..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
         </div>
 
-        <!-- Barra de Busca (100% da largura no celular) -->
-        <div class="relative w-full md:w-72 shrink-0">
-          <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar cliente, procedimento ou telefone..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2.5 pl-9 pr-8 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500 transition">
-          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <!-- 4A. VISÃO MOBILE & TABLET PEQUENO: LISTA DE CARDS VERTICAIS (block md:hidden) -->
+        <div id="appointmentMobileList" class="block md:hidden space-y-3">
+          <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+            Carregando agendamentos...
+          </div>
         </div>
-      </div>
 
-      <!-- 4A. VISÃO MOBILE & TABLET PEQUENO: LISTA DE CARDS VERTICAIS (block md:hidden) -->
-      <div id="appointmentMobileList" class="block md:hidden space-y-3">
-        <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
-          Carregando agendamentos...
-        </div>
-      </div>
-
-      <!-- 4B. VISÃO DESKTOP: TABELA CLÁSSICA DE AGENDAMENTOS & BLOQUEIOS (hidden md:block) -->
-      <div class="hidden md:block bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-xl">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-dark-700/60 border-b border-dark-600 text-slate-300 uppercase tracking-wider font-semibold">
-              <tr>
-                <th scope="col" class="py-3.5 px-4">Data & Horário</th>
-                <th scope="col" class="py-3.5 px-4">Cliente & Perfil</th>
-                <th scope="col" class="py-3.5 px-4">Serviço & Valores</th>
-                <th scope="col" class="py-3.5 px-4">Status do Sinal</th>
-                <th scope="col" class="py-3.5 px-4 text-right">Ações Operacionais</th>
-              </tr>
-            </thead>
-            <tbody id="appointmentTableBody" class="divide-y divide-dark-700/60 text-slate-300">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400">Carregando agendamentos...</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 4B. VISÃO DESKTOP: TABELA CLÁSSICA DE AGENDAMENTOS & BLOQUEIOS (hidden md:block) -->
+        <div class="hidden md:block bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-dark-700/60 border-b border-dark-600 text-slate-300 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th scope="col" class="py-3.5 px-4">Data & Horário</th>
+                  <th scope="col" class="py-3.5 px-4">Cliente & Perfil</th>
+                  <th scope="col" class="py-3.5 px-4">Serviço & Valores</th>
+                  <th scope="col" class="py-3.5 px-4">Status do Sinal</th>
+                  <th scope="col" class="py-3.5 px-4 text-right">Ações Operacionais</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentTableBody" class="divide-y divide-dark-700/60 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-12 text-center text-slate-400">Carregando agendamentos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
     </div>
 
     <!-- ======================================================================= -->
-    <!-- ABA 2: CATÁLOGO DE PROCEDIMENTOS, TEMPOS DE EXECUÇÃO E VALORES          -->
+    <!-- ABA 2: CLIENTES (CRM & HISTÓRICO ESTILO MINHAAGENDA)                    -->
+    <!-- ======================================================================= -->
+    <div id="tabContentClients" class="hidden flex-col gap-4 sm:gap-5">
+      <div class="bg-gradient-to-r from-dark-800 via-dark-800 to-emerald-950/30 p-4 sm:p-5 rounded-2xl border border-emerald-500/25 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            👥 Fichário de Clientes Studio JF
+          </span>
+          <h2 class="text-base sm:text-xl font-extrabold text-white mt-1">Minhas Clientes & Histórico de Atendimentos</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Consulte todas as clientes atendidas, quantidade de visitas, último procedimento e agende em 1 toque.
+          </p>
+        </div>
+        <button onclick="openQuickBookModal('BOOK')" class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 shrink-0">
+          <span>➕ Agendar Cliente</span>
+        </button>
+      </div>
+
+      <!-- Busca de Clientes -->
+      <div class="bg-dark-800 p-3.5 rounded-2xl border border-dark-600 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="relative flex-1">
+          <input type="text" id="clientSearchInput" oninput="renderClientsCrm()" placeholder="Buscar cliente por nome, WhatsApp ou procedimento..." class="w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 pl-9 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-pink-500">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <div id="clientsSummaryText" class="text-xs text-slate-400 font-semibold text-right">
+          Carregando clientes...
+        </div>
+      </div>
+
+      <!-- Grid de Cards de Clientes -->
+      <div id="clientsCrmGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div class="col-span-full bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+          Carregando lista de clientes...
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 3: CAIXA & FINANCEIRO (FATURAMENTO DO DIA E DA SEMANA)              -->
+    <!-- ======================================================================= -->
+    <div id="tabContentFinance" class="hidden flex-col gap-4 sm:gap-5">
+      <div class="bg-gradient-to-r from-dark-800 via-dark-800 to-amber-950/30 p-4 sm:p-5 rounded-2xl border border-amber-500/25 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            💰 Controle Financeiro MinhaAgenda
+          </span>
+          <h2 class="text-base sm:text-xl font-extrabold text-white mt-1">Caixa do Dia & Faturamento da Semana</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Acompanhe os valores previstos, sinais Pix já recebidos e o saldo a receber no Studio em cada atendimento.
+          </p>
+        </div>
+        <button onclick="openWeeklyReportModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 text-pink-300 border border-pink-500/30 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0">
+          <span>📊 Enviar Resumo no WhatsApp</span>
+        </button>
+      </div>
+
+      <!-- Cards Financeiros -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div class="bg-dark-800 p-4 rounded-2xl border border-pink-500/30">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-pink-300">Faturamento do Dia Selecionado</span>
+          <div id="finDayTotal" class="text-2xl font-extrabold text-white mt-1">R$ 0,00</div>
+          <p id="finDaySub" class="text-xs text-slate-400 mt-0.5">0 atendimentos no dia</p>
+        </div>
+        <div class="bg-dark-800 p-4 rounded-2xl border border-emerald-500/30">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Faturamento Total da Semana</span>
+          <div id="finWeekTotal" class="text-2xl font-extrabold text-emerald-300 mt-1">R$ 0,00</div>
+          <p id="finWeekSub" class="text-xs text-slate-400 mt-0.5">Soma de todos os procedimentos ativos</p>
+        </div>
+        <div class="bg-dark-800 p-4 rounded-2xl border border-cyan-500/30">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Sinais Pix Confirmados</span>
+          <div id="finDepositsPaid" class="text-2xl font-extrabold text-cyan-300 mt-1">R$ 0,00</div>
+          <p class="text-xs text-slate-400 mt-0.5">Já recebidos antecipadamente</p>
+        </div>
+        <div class="bg-dark-800 p-4 rounded-2xl border border-amber-500/30">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-300">A Receber no Studio (Semana)</span>
+          <div id="finBalanceDue" class="text-2xl font-extrabold text-amber-300 mt-1">R$ 0,00</div>
+          <p class="text-xs text-slate-400 mt-0.5">Valor restante pago no atendimento</p>
+        </div>
+      </div>
+
+      <!-- Lista Financeira Detalhada da Semana -->
+      <div class="bg-dark-800 rounded-2xl border border-dark-600 overflow-hidden shadow-lg">
+        <div class="p-4 border-b border-dark-600 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-white">Detalhamento de Caixa por Atendimento (Semana Selecionada)</h3>
+        </div>
+        <div id="financeListContainer" class="divide-y divide-dark-700">
+          <div class="p-8 text-center text-xs text-slate-400">Carregando lançamentos financeiros...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 4: CENTRAL DE CONEXÃO 24/7 EMBUTIDA                                 -->
+    <!-- ======================================================================= -->
+    <div id="tabContentConnection" class="hidden flex-col gap-4 sm:gap-5">
+      <div class="bg-gradient-to-r from-dark-800 via-dark-800 to-teal-950/30 p-4 sm:p-6 rounded-2xl border border-teal-500/30 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-500/15 text-teal-300 border border-teal-500/30">
+            🔑 Blindagem Cloud Vault 24/7
+          </span>
+          <h2 class="text-base sm:text-xl font-extrabold text-white mt-1">Conexão do WhatsApp da Alícia & Pareamento por Código</h2>
+          <p class="text-xs text-slate-300 mt-0.5">
+            Verifique o status da conexão em tempo real ou gere o código de 8 dígitos para conectar do próprio celular sem precisar escanear QR Code.
+          </p>
+        </div>
+        <a href="/qr" class="w-full md:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0">
+          <span>🖥️ Abrir Tela Cheia de Conexão (/qr)</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Card de Status Ao Vivo -->
+        <div class="bg-dark-800 p-5 rounded-2xl border border-dark-600 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Status Atual do WhatsApp</span>
+            <span id="connStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Verificando...</span>
+          </div>
+          <div class="bg-dark-900/70 p-4 rounded-xl border border-dark-700 space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-slate-400">Estado da Sessão:</span> <strong id="connStateText" class="text-white">--</strong></div>
+            <div class="flex justify-between"><span class="text-slate-400">Cofre em Nuvem (GitHub Vault):</span> <strong class="text-emerald-400">Ativo & Sincronizado</strong></div>
+            <div class="flex justify-between"><span class="text-slate-400">Keep-Alive Anti-Hibernação:</span> <strong class="text-emerald-400">Ativo (Ping a cada 4 min)</strong></div>
+          </div>
+          <button onclick="fetchConnectionStatus()" class="w-full min-h-[42px] px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-slate-200 text-xs font-bold border border-dark-600 transition">
+            🔄 Atualizar Status da Conexão
+          </button>
+        </div>
+
+        <!-- Card de Pareamento por Código de 8 Dígitos -->
+        <div class="bg-dark-800 p-5 rounded-2xl border border-dark-600 space-y-3.5">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>📲</span> Parear por Código de 8 Dígitos (1 Celular)
+          </h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Se precisar reconectar o WhatsApp da Janaína usando apenas o próprio iPhone dela, digite o número com DDD abaixo e copie o código de 8 letras/números no WhatsApp:
+          </p>
+          <div class="flex gap-2">
+            <input type="tel" id="dashPairingPhone" value="5521985206846" placeholder="Ex: 5521985206846" class="flex-1 min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-sm font-mono text-white focus:outline-none focus:border-teal-500">
+            <button id="btnDashPairingCode" onclick="requestPairingCodeFromDashboard()" class="min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold text-xs shadow-lg shrink-0">
+              Gerar Código
+            </button>
+          </div>
+          <div id="dashPairingCodeResult" class="hidden bg-dark-900 border border-teal-500/40 rounded-xl p-3 text-center">
+            <p class="text-[11px] text-slate-400 mb-1">Digite este código na notificação do WhatsApp:</p>
+            <div id="dashPairingCodeValue" class="text-2xl font-mono font-extrabold tracking-widest text-teal-300 select-all">---- ----</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 5: CATÁLOGO DE PROCEDIMENTOS, TEMPOS DE EXECUÇÃO E VALORES          -->
     <!-- ======================================================================= -->
     <div id="tabContentCatalog" class="hidden flex-col gap-4 sm:gap-6">
 
@@ -612,8 +839,254 @@
     </div>
   </div>
 
+  <!-- MODAL: NOVO AGENDAMENTO OU BLOQUEIO DE HORÁRIO (1-TAP MINHAAGENDA) -->
+  <div id="quickBookModal" onclick="if(event.target === this) closeQuickBookModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-3.5 sm:hidden"></div>
+
+      <!-- Alternador entre Agendar Cliente e Bloquear Horário -->
+      <div class="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-dark-600">
+        <div class="flex bg-dark-900 p-1 rounded-xl border border-dark-600 flex-1">
+          <button type="button" id="qbTabBook" onclick="setQuickBookMode('BOOK')" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold transition bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow">
+            📅 Agendar Cliente
+          </button>
+          <button type="button" id="qbTabBlock" onclick="setQuickBookMode('BLOCK')" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold transition text-slate-300 hover:text-white">
+            🔒 Bloquear Horário
+          </button>
+        </div>
+        <button onclick="closeQuickBookModal()" class="min-h-[36px] min-w-[36px] rounded-lg bg-dark-700 text-slate-400 hover:text-white text-lg font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <!-- FORMULÁRIO 1: AGENDAR CLIENTE -->
+      <div id="qbFormBook" class="space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Data do Atendimento *</label>
+            <input type="date" id="qbDate" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Horário de Início *</label>
+            <input type="time" id="qbTime" step="900" value="09:00" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-pink-300 focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nome da Cliente *</label>
+            <input type="text" id="qbClientName" list="clientsAutocompleteList" oninput="handleClientAutocomplete()" placeholder="Ex: Fernanda / Larissa" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+            <datalist id="clientsAutocompleteList"></datalist>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp (Opcional)</label>
+            <input type="tel" id="qbClientPhone" placeholder="Ex: 21999999999" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Procedimento *</label>
+          <select id="qbServiceSelect" onchange="onQuickBookServiceChange()" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+            <option value="">Selecione um procedimento do catálogo...</option>
+          </select>
+          <input type="text" id="qbCustomService" placeholder="Ou digite o nome do procedimento personalizado..." class="hidden mt-2 w-full min-h-[42px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold text-emerald-300 mb-1">Valor Total (R$)</label>
+            <input type="number" id="qbPrice" step="0.50" min="0" value="80.00" class="w-full min-h-[42px] bg-dark-700 border border-emerald-500/40 rounded-xl px-3 py-2 text-sm font-extrabold text-emerald-300 focus:outline-none focus:border-emerald-400">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-amber-300 mb-1">Duração (min)</label>
+            <input type="number" id="qbDuration" step="5" min="10" value="60" class="w-full min-h-[42px] bg-dark-700 border border-amber-500/40 rounded-xl px-3 py-2 text-sm font-extrabold text-amber-300 focus:outline-none focus:border-amber-400">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-pink-300 mb-1">Status / Sinal</label>
+            <select id="qbDepositStatus" class="w-full min-h-[42px] bg-dark-700 border border-pink-500/40 rounded-xl px-2.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-pink-500">
+              <option value="EXEMPT">💖 Isenta (Cliente JF)</option>
+              <option value="CONFIRMED">✅ Sinal Pago</option>
+              <option value="PENDING">⏳ Aguardando Pix</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Observação (Opcional)</label>
+          <input type="text" id="qbNotes" placeholder="Ex: Preferência por curvatura D / Cliente antiga" class="w-full min-h-[40px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-pink-500">
+        </div>
+
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-dark-600">
+          <button type="button" onclick="closeQuickBookModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-dark-700 text-slate-300 text-xs font-semibold">
+            Cancelar
+          </button>
+          <button type="button" id="btnSubmitQuickBook" onclick="submitQuickBookAppointment()" class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg">
+            ✅ Salvar na MinhaAgenda
+          </button>
+        </div>
+      </div>
+
+      <!-- FORMULÁRIO 2: BLOQUEAR HORÁRIO OU DIA INTEIRO -->
+      <div id="qbFormBlock" class="hidden space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Data do Bloqueio *</label>
+          <input type="date" id="qbBlockDate" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <label class="flex items-center justify-between bg-dark-900/70 p-3 rounded-xl border border-dark-600 cursor-pointer">
+          <span class="text-xs font-bold text-amber-300 flex items-center gap-2">
+            <span>🚫</span> Trancar o Dia Inteiro (Folga / Feriado)
+          </span>
+          <input type="checkbox" id="qbBlockFullDay" onchange="toggleBlockFullDayFields()" class="w-4 h-4 accent-amber-500 rounded">
+        </label>
+
+        <div id="qbBlockTimeRangeFields" class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Início do Bloqueio *</label>
+            <input type="time" id="qbBlockStart" value="12:00" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-300 focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Término do Bloqueio *</label>
+            <input type="time" id="qbBlockEnd" value="14:00" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-300 focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Motivo / Lembrete Pessoal</label>
+          <input type="text" id="qbBlockReason" placeholder="Ex: Horário de Almoço / Médico / Compromisso Pessoal" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-dark-600">
+          <button type="button" onclick="closeQuickBookModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-dark-700 text-slate-300 text-xs font-semibold">
+            Cancelar
+          </button>
+          <button type="button" id="btnSubmitQuickBlock" onclick="submitQuickBlockSlot()" class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-bold shadow-lg">
+            🔒 Confirmar Bloqueio de Agenda
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR / REMARCAR AGENDAMENTO (ESTILO MINHAAGENDA) -->
+  <div id="editAppointmentModal" onclick="if(event.target === this) closeEditAppointmentModal()" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bottom-sheet-enter bg-dark-800 border-t sm:border border-dark-600 rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div class="w-12 h-1.5 bg-dark-600 rounded-full mx-auto mb-3.5 sm:hidden"></div>
+
+      <div class="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-dark-600">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 shrink-0 rounded-xl bg-pink-500/15 text-pink-400 flex items-center justify-center text-lg border border-pink-500/30">
+            ✏️
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Editar / Remarcar Atendimento</h3>
+            <p class="text-xs text-slate-400">Altere horário, data, procedimento, valor ou dados da cliente</p>
+          </div>
+        </div>
+        <button onclick="closeEditAppointmentModal()" class="min-h-[36px] min-w-[36px] rounded-lg bg-dark-700 text-slate-400 hover:text-white text-lg font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <input type="hidden" id="editApptId">
+
+      <div class="space-y-3.5 mb-5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nova Data *</label>
+            <input type="date" id="editApptDate" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Novo Horário *</label>
+            <input type="time" id="editApptTime" step="900" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-pink-300 focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nome da Cliente *</label>
+            <input type="text" id="editApptClientName" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp</label>
+            <input type="tel" id="editApptPhone" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Procedimento *</label>
+          <input type="text" id="editApptService" list="servicesAutocompleteList" class="w-full min-h-[44px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-pink-500">
+          <datalist id="servicesAutocompleteList"></datalist>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold text-emerald-300 mb-1">Valor (R$)</label>
+            <input type="number" id="editApptPrice" step="0.50" min="0" class="w-full min-h-[42px] bg-dark-700 border border-emerald-500/40 rounded-xl px-3 py-2 text-sm font-extrabold text-emerald-300">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-amber-300 mb-1">Duração (min)</label>
+            <input type="number" id="editApptDuration" step="5" min="10" class="w-full min-h-[42px] bg-dark-700 border border-amber-500/40 rounded-xl px-3 py-2 text-sm font-extrabold text-amber-300">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-pink-300 mb-1">Status Sinal</label>
+            <select id="editApptDepositStatus" class="w-full min-h-[42px] bg-dark-700 border border-pink-500/40 rounded-xl px-2.5 py-2 text-xs font-bold text-white">
+              <option value="EXEMPT">💖 Isenta</option>
+              <option value="CONFIRMED">✅ Sinal Pago</option>
+              <option value="PENDING">⏳ Pendente</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Observações</label>
+          <input type="text" id="editApptNotes" class="w-full min-h-[40px] bg-dark-700 border border-dark-600 rounded-xl px-3.5 py-2 text-xs text-white">
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse sm:flex-row justify-between gap-2.5 pt-3 border-t border-dark-600">
+        <button type="button" onclick="openCancelFromEditModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-bold">
+          ✕ Desmarcar Horário
+        </button>
+        <div class="flex flex-col-reverse sm:flex-row gap-2">
+          <button type="button" onclick="closeEditAppointmentModal()" class="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-dark-700 text-slate-300 text-xs font-semibold">
+            Voltar
+          </button>
+          <button type="button" id="btnSubmitEditAppt" onclick="submitEditAppointment()" class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg">
+            💾 Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÃO FLUTUANTE + (FAB) ESTILO MINHAAGENDA -->
+  <button onclick="openQuickBookModal('BOOK', selectedDateKey)" title="Novo Agendamento ou Bloqueio" aria-label="Novo Agendamento" class="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-600 via-purple-600 to-amber-500 text-white shadow-2xl shadow-pink-600/40 border border-white/20 flex items-center justify-center text-2xl font-extrabold active:scale-90 transition hover:scale-105">
+    +
+  </button>
+
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR ESTILO APP NATIVO (BOTTOM TAB BAR — MOBILE) -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-800/95 backdrop-blur-md border-t border-dark-600 px-1 py-1.5 grid grid-cols-5 gap-1">
+    <button id="mobTab-APPOINTMENTS" onclick="switchDashboardTab('APPOINTMENTS')" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-pink-400 font-bold">
+      <span class="text-base leading-none">📅</span>
+      <span class="text-[10px] mt-1">Agenda</span>
+    </button>
+    <button id="mobTab-CLIENTS" onclick="switchDashboardTab('CLIENTS')" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium">
+      <span class="text-base leading-none">👥</span>
+      <span class="text-[10px] mt-1">Clientes</span>
+    </button>
+    <button id="mobTab-FINANCE" onclick="switchDashboardTab('FINANCE')" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium">
+      <span class="text-base leading-none">💰</span>
+      <span class="text-[10px] mt-1">Caixa</span>
+    </button>
+    <button id="mobTab-CATALOG" onclick="switchDashboardTab('CATALOG')" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium">
+      <span class="text-base leading-none">💅</span>
+      <span class="text-[10px] mt-1">Serviços</span>
+    </button>
+    <button id="mobTab-CONNECTION" onclick="switchDashboardTab('CONNECTION')" class="mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium">
+      <span class="text-base leading-none">🔑</span>
+      <span class="text-[10px] mt-1">Conexão</span>
+    </button>
+  </nav>
+
   <!-- TOAST NOTIFICATION (RESPONSIVO) -->
-  <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:bottom-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+  <div id="toast" class="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-5 sm:bottom-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
     <div id="toastBox" class="bg-dark-700 border border-emerald-500 text-white px-4 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-medium max-w-md ml-auto">
       <span id="toastIcon" class="shrink-0">✅</span>
       <span id="toastMsg" class="leading-snug">Mensagem</span>
@@ -623,14 +1096,23 @@
   <!-- JAVASCRIPT DA APLICAÇÃO -->
   <script>
     let currentDashboardTab = 'APPOINTMENTS';
+    let currentAgendaViewMode = 'DAY_TIMELINE'; // 'DAY_TIMELINE' | 'WEEK_LIST'
     let currentWeekOffset = 0;
     let currentFilter = 'ALL';
     let rawAppointments = [];
     let activeAppointmentId = null;
 
-    // Estado do Catálogo de Procedimentos
+    // Data selecionada na régua diária MinhaAgenda (YYYY-MM-DD)
+    const getTodayIsoLocal = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    let selectedDateKey = getTodayIsoLocal();
+
+    // Estado do Catálogo de Procedimentos e CRM de Clientes
     let catalogServices = [];
     let currentCatalogCategory = 'ALL';
+    let crmClients = [];
 
     function toggleMobileMenu() {
       const drawer = document.getElementById('mobileActionDrawer');
@@ -641,40 +1123,59 @@
 
     function switchDashboardTab(tab) {
       currentDashboardTab = tab;
-      const tabApp = document.getElementById('tabContentAppointments');
-      const tabCat = document.getElementById('tabContentCatalog');
-      const btnApp = document.getElementById('tabBtnAppointments');
-      const btnCat = document.getElementById('tabBtnCatalog');
+      const tabMap = {
+        APPOINTMENTS: { content: 'tabContentAppointments', topBtn: 'tabBtnAppointments', mobBtn: 'mobTab-APPOINTMENTS' },
+        CLIENTS: { content: 'tabContentClients', topBtn: 'tabBtnClients', mobBtn: 'mobTab-CLIENTS' },
+        FINANCE: { content: 'tabContentFinance', topBtn: 'tabBtnFinance', mobBtn: 'mobTab-FINANCE' },
+        CATALOG: { content: 'tabContentCatalog', topBtn: 'tabBtnCatalog', mobBtn: 'mobTab-CATALOG' },
+        CONNECTION: { content: 'tabContentConnection', topBtn: 'tabBtnConnection', mobBtn: 'mobTab-CONNECTION' }
+      };
+
+      Object.keys(tabMap).forEach(key => {
+        const cfg = tabMap[key];
+        const contentEl = document.getElementById(cfg.content);
+        const topBtnEl = document.getElementById(cfg.topBtn);
+        const mobBtnEl = document.getElementById(cfg.mobBtn);
+        const isActive = key === tab;
+
+        if (contentEl) {
+          if (isActive) {
+            contentEl.classList.remove('hidden');
+            contentEl.classList.add('flex');
+          } else {
+            contentEl.classList.add('hidden');
+            contentEl.classList.remove('flex');
+          }
+        }
+
+        if (topBtnEl) {
+          topBtnEl.className = isActive
+            ? 'top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20 whitespace-nowrap'
+            : 'top-tab-btn flex-1 min-h-[44px] px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700 whitespace-nowrap';
+        }
+
+        if (mobBtnEl) {
+          mobBtnEl.className = isActive
+            ? 'mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-pink-400 font-bold bg-pink-500/10'
+            : 'mob-tab-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium';
+        }
+      });
 
       if (tab === 'CATALOG') {
-        tabApp.classList.add('hidden');
-        tabApp.classList.remove('flex');
-        tabCat.classList.remove('hidden');
-        tabCat.classList.add('flex');
-
-        btnCat.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20';
-        btnApp.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700';
-
         fetchCatalogServices();
+      } else if (tab === 'CLIENTS') {
+        fetchClientsCrm();
+      } else if (tab === 'FINANCE') {
+        fetchDashboardData();
+      } else if (tab === 'CONNECTION') {
+        fetchConnectionStatus();
       } else {
-        tabCat.classList.add('hidden');
-        tabCat.classList.remove('flex');
-        tabApp.classList.remove('hidden');
-        tabApp.classList.add('flex');
-
-        btnApp.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-md shadow-pink-600/20';
-        btnCat.className = 'flex-1 min-h-[46px] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-dark-700/70 text-slate-300 hover:text-white hover:bg-dark-700';
-
         fetchDashboardData();
       }
     }
 
     function refreshActiveTab() {
-      if (currentDashboardTab === 'CATALOG') {
-        fetchCatalogServices();
-      } else {
-        fetchDashboardData();
-      }
+      switchDashboardTab(currentDashboardTab);
     }
 
     function showToast(message, type = 'success') {
@@ -1062,7 +1563,7 @@
     }
 
     // =========================================================================
-    // FUNÇÕES DE AGENDAMENTOS & SINAIS (ABA 1)
+    // FUNÇÕES DE AGENDAMENTOS, RÉGUA DIÁRIA MINHAAGENDA & SINAIS (ABA 1)
     // =========================================================================
     function getWeekRange(offsetWeeks = 0) {
       const now = new Date();
@@ -1080,21 +1581,390 @@
 
       const pad = (n) => String(n).padStart(2, '0');
       const formatLocalDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const todayKey = getTodayIsoLocal();
+
+      const shortNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const longNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+      const days = [];
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dKey = formatLocalDate(d);
+        days.push({
+          dateKey: dKey,
+          weekdayShort: shortNames[d.getDay()],
+          weekdayLong: longNames[d.getDay()],
+          dayNum: pad(d.getDate()),
+          monthNum: pad(d.getMonth() + 1),
+          yearNum: d.getFullYear(),
+          isToday: dKey === todayKey
+        });
+      }
 
       return {
         startDate: formatLocalDate(monday),
-        endDate: formatLocalDate(sunday)
+        endDate: formatLocalDate(sunday),
+        days
       };
     }
 
     function navigateWeek(delta) {
       currentWeekOffset += delta;
+      const { days } = getWeekRange(currentWeekOffset);
+      if (!days.some(d => d.dateKey === selectedDateKey)) {
+        const todayInWeek = days.find(d => d.isToday);
+        selectedDateKey = todayInWeek ? todayInWeek.dateKey : days[0].dateKey;
+      }
       fetchDashboardData();
     }
 
     function navigateCurrentWeek() {
       currentWeekOffset = 0;
+      selectedDateKey = getTodayIsoLocal();
       fetchDashboardData();
+    }
+
+    function setAgendaViewMode(mode) {
+      currentAgendaViewMode = mode;
+      const btnDay = document.getElementById('viewModeBtnDay');
+      const btnWeek = document.getElementById('viewModeBtnWeek');
+      const dailySec = document.getElementById('dailyTimelineSection');
+
+      if (mode === 'DAY_TIMELINE') {
+        if (btnDay) btnDay.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow';
+        if (btnWeek) btnWeek.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white';
+        if (dailySec) dailySec.classList.remove('hidden');
+      } else {
+        if (btnWeek) btnWeek.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow';
+        if (btnDay) btnDay.className = 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 text-slate-300 hover:text-white';
+        if (dailySec) dailySec.classList.add('hidden');
+      }
+    }
+
+    function selectDayInStrip(dateKey) {
+      selectedDateKey = dateKey;
+      if (currentAgendaViewMode !== 'DAY_TIMELINE') {
+        setAgendaViewMode('DAY_TIMELINE');
+      }
+      renderDayStrip();
+      renderDailyTimeline();
+      renderFinanceTab();
+    }
+
+    function getItemDateKey(item) {
+      if (item.dateKey) return item.dateKey;
+      if (item.startTime) {
+        const d = new Date(item.startTime);
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      }
+      return '';
+    }
+
+    function timeStrToMinutes(tStr) {
+      const m = String(tStr || '09:00').match(/^(\d{1,2}):(\d{2})/);
+      if (!m) return 9 * 60;
+      return Number(m[1]) * 60 + Number(m[2]);
+    }
+
+    function minutesToTimeStr(mins) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function renderDayStrip() {
+      const container = document.getElementById('dayStripContainer');
+      if (!container) return;
+
+      const { days } = getWeekRange(currentWeekOffset);
+      if (!days.some(d => d.dateKey === selectedDateKey)) {
+        const todayMatch = days.find(d => d.isToday);
+        selectedDateKey = todayMatch ? todayMatch.dateKey : days[0].dateKey;
+      }
+
+      container.innerHTML = days.map(d => {
+        const dayItems = rawAppointments.filter(item => {
+          if (getItemDateKey(item) !== d.dateKey) return false;
+          if (item.isBlockedSlot) return false;
+          return item.generalStatus !== 'CANCELLED' && item.overallStatus !== 'CANCELLED' && item.depositStatus !== 'EXPIRED';
+        });
+        const count = dayItems.length;
+        const isSelected = d.dateKey === selectedDateKey;
+
+        const btnClass = isSelected
+          ? 'bg-gradient-to-b from-pink-600 to-purple-700 text-white border-pink-400 shadow-lg shadow-pink-600/25 scale-[1.02]'
+          : d.isToday
+            ? 'bg-dark-700 text-white border-pink-500/50 hover:bg-dark-600'
+            : 'bg-dark-900/70 text-slate-300 border-dark-600 hover:bg-dark-700';
+
+        const badgeHtml = count > 0
+          ? `<span class="mt-1 px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] font-extrabold ${isSelected ? 'bg-white/25 text-white' : 'bg-pink-500/20 text-pink-300 border border-pink-500/30'}">${count} ag.</span>`
+          : `<span class="mt-1 text-[9px] sm:text-[10px] ${isSelected ? 'text-pink-100/80' : 'text-slate-500'}">Livre</span>`;
+
+        return `
+          <button type="button" onclick="selectDayInStrip('${d.dateKey}')" class="min-h-[68px] sm:min-h-[74px] p-1.5 sm:p-2 rounded-xl border transition flex flex-col items-center justify-center ${btnClass}">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-pink-100' : 'text-slate-400'}">${d.weekdayShort}</span>
+            <span class="text-base sm:text-xl font-extrabold leading-tight mt-0.5">${d.dayNum}</span>
+            ${badgeHtml}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderDailyTimeline() {
+      const listEl = document.getElementById('dailyTimelineList');
+      const titleEl = document.getElementById('selectedDayTitle');
+      const countBadgeEl = document.getElementById('selectedDayCountBadge');
+      const revBadgeEl = document.getElementById('selectedDayRevenueBadge');
+      if (!listEl) return;
+
+      const { days } = getWeekRange(currentWeekOffset);
+      const dayObj = days.find(d => d.dateKey === selectedDateKey) || {
+        dateKey: selectedDateKey,
+        weekdayLong: 'Dia Selecionado',
+        dayNum: selectedDateKey.slice(8, 10),
+        monthNum: selectedDateKey.slice(5, 7),
+        yearNum: selectedDateKey.slice(0, 4)
+      };
+
+      const dayItems = rawAppointments.filter(item => {
+        if (getItemDateKey(item) !== selectedDateKey) return false;
+        if (item.isBlockedSlot) return true;
+        return item.generalStatus !== 'CANCELLED' && item.overallStatus !== 'CANCELLED' && item.depositStatus !== 'EXPIRED';
+      });
+
+      const activeClientAppointments = dayItems.filter(i => !i.isBlockedSlot);
+      const dayRevenue = activeClientAppointments.reduce((acc, cur) => acc + Number(cur.totalAmount || 0), 0);
+
+      if (titleEl) {
+        titleEl.innerText = `${dayObj.weekdayLong}, ${dayObj.dayNum}/${dayObj.monthNum}/${dayObj.yearNum}`;
+      }
+      if (countBadgeEl) {
+        countBadgeEl.innerText = `${activeClientAppointments.length} atendimento(s)`;
+      }
+      if (revBadgeEl) {
+        revBadgeEl.innerText = `R$ ${formatCurrencyBR(dayRevenue)} previsto`;
+      }
+
+      const showFreeSlots = document.getElementById('toggleShowFreeSlots')?.checked !== false;
+
+      // Prepara intervalos ocupados do dia
+      const parsedItems = dayItems.map(item => {
+        let startStr = item.startTimeStr;
+        let endStr = item.endTimeStr;
+        if (!startStr && item.formattedTime) {
+          const parts = String(item.formattedTime).split(' às ');
+          startStr = parts[0]?.trim() || '09:00';
+          endStr = parts[1]?.trim() || '10:00';
+        }
+        const startMins = timeStrToMinutes(startStr || '09:00');
+        let endMins = timeStrToMinutes(endStr || '10:00');
+        if (endMins <= startMins) endMins = startMins + (Number(item.durationMinutes) || 60);
+        return {
+          ...item,
+          startStr: startStr || minutesToTimeStr(startMins),
+          endStr: endStr || minutesToTimeStr(endMins),
+          startMins,
+          endMins
+        };
+      }).sort((a, b) => a.startMins - b.startMins);
+
+      // Se o usuário desmarcou "Mostrar horários livres", mostra apenas os cards ocupados
+      if (!showFreeSlots) {
+        if (parsedItems.length === 0) {
+          listEl.innerHTML = `
+            <div class="bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center space-y-3">
+              <div class="text-sm font-bold text-slate-300">Nenhum atendimento ou bloqueio neste dia.</div>
+              <button onclick="openQuickBookModal('BOOK', '${selectedDateKey}', '09:00')" class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold shadow">
+                + Lançar Primeiro Agendamento do Dia
+              </button>
+            </div>
+          `;
+          return;
+        }
+        listEl.innerHTML = parsedItems.map(item => renderTimelineItemCard(item)).join('');
+        return;
+      }
+
+      // Régua completa de 30 em 30 minutos das 09:00 às 20:30
+      const renderedItemIds = new Set();
+      const rowsHtml = [];
+
+      // Inclui qualquer item que comece antes das 09:00
+      parsedItems.filter(it => it.startMins < 9 * 60).forEach(it => {
+        renderedItemIds.add(it.id);
+        rowsHtml.push(renderTimelineItemCard(it));
+      });
+
+      for (let slotMins = 9 * 60; slotMins <= 20 * 60 + 30; slotMins += 30) {
+        const slotTimeStr = minutesToTimeStr(slotMins);
+        const slotEndMins = slotMins + 30;
+
+        // Verifica se há agendamentos/bloqueios começando dentro desta faixa de 30m
+        const startingHere = parsedItems.filter(it =>
+          !renderedItemIds.has(it.id) &&
+          it.startMins >= slotMins &&
+          it.startMins < slotEndMins
+        );
+
+        if (startingHere.length > 0) {
+          startingHere.forEach(it => {
+            renderedItemIds.add(it.id);
+            rowsHtml.push(renderTimelineItemCard(it));
+          });
+          continue;
+        }
+
+        // Verifica se este slot de 30 min já está coberto por um atendimento/bloqueio em andamento
+        const coveringItem = parsedItems.find(it =>
+          it.startMins < slotMins && it.endMins > slotMins
+        );
+
+        if (coveringItem) {
+          // Já exibido no card principal que iniciou antes
+          continue;
+        }
+
+        // Slot 100% LIVRE -> Renderiza linha de 1-toque estilo MinhaAgenda
+        rowsHtml.push(`
+          <div onclick="openQuickBookModal('BOOK', '${selectedDateKey}', '${slotTimeStr}')" class="group cursor-pointer bg-dark-800/75 hover:bg-dark-700/90 active:scale-[0.99] rounded-xl border border-dark-600/80 hover:border-emerald-500/40 px-3.5 py-2.5 flex items-center justify-between gap-2 transition">
+            <div class="flex items-center gap-3">
+              <span class="font-mono text-xs sm:text-sm font-extrabold text-slate-200 group-hover:text-emerald-300 w-14">${slotTimeStr}</span>
+              <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400/90 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Horário Livre</span>
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+              <button type="button" onclick="openQuickBookModal('BOOK', '${selectedDateKey}', '${slotTimeStr}')" class="min-h-[32px] px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold transition">
+                + Agendar
+              </button>
+              <button type="button" onclick="openQuickBookModal('BLOCK', '${selectedDateKey}', '${slotTimeStr}')" title="Trancar este horário" class="min-h-[32px] px-2 py-1 rounded-lg bg-dark-700 hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 border border-dark-600 text-[11px] font-semibold transition">
+                🔒
+              </button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Inclui qualquer item após 20:30 que ainda não tenha sido renderizado
+      parsedItems.filter(it => !renderedItemIds.has(it.id)).forEach(it => {
+        renderedItemIds.add(it.id);
+        rowsHtml.push(renderTimelineItemCard(it));
+      });
+
+      listEl.innerHTML = rowsHtml.join('');
+    }
+
+    function renderTimelineItemCard(item) {
+      const durationMins = Number(item.durationMinutes) || (item.endMins - item.startMins) || 60;
+      const durText = formatDurationHuman(durationMins);
+
+      if (item.isBlockedSlot) {
+        const isCustomBlock = String(item.id || '').startsWith('block-');
+        const safeReason = escapeQuotes(item.service || 'Bloqueio de Agenda');
+        return `
+          <div class="bg-striped-blocked rounded-2xl border border-amber-500/35 p-3.5 sm:p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-xl px-2.5 py-1.5 text-center shrink-0 min-w-[72px]">
+                <div class="text-xs sm:text-sm font-extrabold font-mono">${item.startStr}</div>
+                <div class="text-[10px] text-amber-200/80 font-mono">até ${item.endStr}</div>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs sm:text-sm font-extrabold text-amber-300 flex items-center gap-1">
+                    <span>🔒</span> ${item.service || 'Bloqueio de Agenda'}
+                  </span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-600">${durText}</span>
+                </div>
+                <p class="text-xs text-slate-300 mt-0.5">${item.notes || 'Horário trancado na grade'}</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-2">
+              ${isCustomBlock ? `
+                <button type="button" onclick="unlockBlockedSlot('${item.id}', '${safeReason}')" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5">
+                  <span>🔓 Liberar Horário</span>
+                </button>
+              ` : `
+                <span class="text-[11px] text-slate-400 font-mono px-2.5 py-1 rounded-lg bg-dark-900/60 border border-dark-700">Bloqueio Fixo Semanal</span>
+              `}
+            </div>
+          </div>
+        `;
+      }
+
+      const cleanPhone = (item.whatsappPhone || '').replace(/\D/g, '');
+      const waMsg = encodeURIComponent(`Olá, ${item.clientName}! Aqui é do Studio JF Designer. Tudo bem? Estamos entrando em contato sobre o seu agendamento para ${item.service} do dia ${item.formattedDate} às ${item.formattedTime}.`);
+      const waLink = `https://wa.me/${cleanPhone}?text=${waMsg}`;
+      const safeName = escapeQuotes(item.clientName);
+      const safeService = escapeQuotes(item.service);
+
+      let statusBadge = '';
+      let borderClass = 'border-pink-500/35';
+      if (item.depositStatus === 'EXEMPT') {
+        borderClass = 'border-emerald-500/40';
+        statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">💖 Isenta (Cliente JF)</span>`;
+      } else if (item.depositStatus === 'CONFIRMED') {
+        borderClass = 'border-emerald-500/40';
+        statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">✅ Sinal Pago</span>`;
+      } else if (item.depositStatus === 'RECEIPT_SENT') {
+        borderClass = 'border-cyan-500/45';
+        statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 animate-pulse">📄 Comprovante</span>`;
+      } else {
+        borderClass = 'border-amber-500/45';
+        statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⏳ Sinal Pendente</span>`;
+      }
+
+      return `
+        <div class="bg-dark-800 rounded-2xl border ${borderClass} p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition hover:border-pink-500/50">
+          <div class="flex items-start gap-3">
+            <!-- Coluna de Horário -->
+            <div class="bg-gradient-to-b from-pink-600/20 to-purple-600/20 border border-pink-500/30 text-white rounded-xl px-2.5 py-1.5 text-center shrink-0 min-w-[74px]">
+              <div class="text-xs sm:text-sm font-extrabold font-mono text-pink-300">${item.startStr}</div>
+              <div class="text-[10px] text-slate-300 font-mono">até ${item.endStr}</div>
+              <div class="text-[9px] text-amber-300 font-bold mt-0.5">${durText}</div>
+            </div>
+
+            <!-- Dados da Cliente & Procedimento -->
+            <div class="space-y-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm sm:text-base font-extrabold text-white">${item.clientName}</span>
+                ${statusBadge}
+              </div>
+              <div class="text-xs sm:text-sm font-semibold text-pink-200 flex items-center gap-1.5">
+                <span>💅</span>
+                <span>${item.service}</span>
+              </div>
+              <div class="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+                <span>Valor: <strong class="text-emerald-300">R$ ${formatCurrencyBR(item.totalAmount)}</strong></span>
+                <span>•</span>
+                <span class="font-mono">${item.whatsappPhone || ''}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botões de Ação MinhaAgenda no Card -->
+          <div class="flex items-center justify-end gap-1.5 flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-dark-700">
+            ${(item.depositStatus === 'PENDING' || item.depositStatus === 'RECEIPT_SENT') ? `
+              <button type="button" onclick="openConfirmModal('${item.id}', '${safeName}', '${safeService}', ${item.depositAmount})" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow">
+                ✅ Aprovar Sinal
+              </button>
+            ` : ''}
+            <button type="button" onclick="openEditAppointmentModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-dark-700 hover:bg-dark-600 text-pink-300 border border-pink-500/30 text-xs font-bold transition flex items-center gap-1">
+              <span>✏️ Editar</span>
+            </button>
+            <a href="${waLink}" target="_blank" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1">
+              <span>💬 WhatsApp</span>
+            </a>
+            <button type="button" onclick="openCancelModal('${item.id}')" class="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-dark-700 hover:bg-rose-950/60 text-rose-400 border border-dark-600 text-xs font-bold transition" title="Desmarcar">
+              ✕
+            </button>
+          </div>
+        </div>
+      `;
     }
 
     function setFilter(filter) {
@@ -1138,7 +2008,11 @@
     }
 
     async function fetchDashboardData() {
-      const { startDate, endDate } = getWeekRange(currentWeekOffset);
+      const { startDate, endDate, days } = getWeekRange(currentWeekOffset);
+      if (!days.some(d => d.dateKey === selectedDateKey)) {
+        const todayInWeek = days.find(d => d.isToday);
+        selectedDateKey = todayInWeek ? todayInWeek.dateKey : days[0].dateKey;
+      }
 
       try {
         const response = await fetch(`/api/dashboard/weekly?startDate=${startDate}&endDate=${endDate}`);
@@ -1176,10 +2050,10 @@
         }
 
         document.getElementById('kpiConfirmedTotal').innerText = `R$ ${formatCurrencyBR(metrics.confirmedDepositsTotal)}`;
-        document.getElementById('kpiConfirmedCount').innerText = `${metrics.confirmedDepositsCount || 0} agendamento(s) garantido(s)`;
+        document.getElementById('kpiConfirmedCount').innerText = `${metrics.confirmedDepositsCount || 0} garantido(s)`;
 
         document.getElementById('kpiExpiredCount').innerText = metrics.expiredDepositsCount || 0;
-        document.getElementById('kpiLossRate').innerText = `${metrics.lossRate || 0}% taxa de cancelamento`;
+        document.getElementById('kpiLossRate').innerText = `${metrics.lossRate || 0}% cancelamento`;
 
         document.getElementById('count-ALL').innerText = metrics.totalAppointments;
         document.getElementById('count-PENDING').innerText = metrics.pendingOnlyCount;
@@ -1188,7 +2062,10 @@
         document.getElementById('count-EXPIRED').innerText = metrics.expiredDepositsCount;
 
         rawAppointments = data.schedule || data.appointments || [];
+        renderDayStrip();
+        renderDailyTimeline();
         renderTable();
+        renderFinanceTab();
       } catch (err) {
         console.error('Erro na requisição do dashboard:', err);
         showToast('Erro ao sincronizar dados com o servidor', 'error');
@@ -1221,7 +2098,6 @@
       let filtered = rawAppointments;
 
       if (currentFilter === 'ALL') {
-        // Na visão principal (Todos), oculta agendamentos desmarcados/expirados para não poluir a agenda ativa
         filtered = filtered.filter(item =>
           item.isBlockedSlot ||
           (item.generalStatus !== 'CANCELLED' && item.overallStatus !== 'CANCELLED' && item.depositStatus !== 'EXPIRED')
@@ -1275,6 +2151,8 @@
       // 1. RENDERIZAÇÃO DESKTOP (TABELA)
       tbody.innerHTML = filtered.map(item => {
         if (item.isBlockedSlot) {
+          const isCustomBlock = String(item.id || '').startsWith('block-');
+          const safeReason = escapeQuotes(item.service || 'Bloqueio');
           return `
             <tr class="bg-striped-blocked text-slate-300">
               <td class="py-4 px-4 whitespace-nowrap">
@@ -1297,7 +2175,11 @@
                 </span>
               </td>
               <td class="py-4 px-4 text-right">
-                <span class="text-xs text-slate-400 font-mono">Compromisso Pessoal</span>
+                ${isCustomBlock ? `
+                  <button onclick="unlockBlockedSlot('${item.id}', '${safeReason}')" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-xs font-bold transition">
+                    🔓 Liberar Horário
+                  </button>
+                ` : `<span class="text-xs text-slate-400 font-mono">Bloqueio Fixo</span>`}
               </td>
             </tr>
           `;
@@ -1376,16 +2258,18 @@
             `;
           }
           actionButtons += `
+            <button onclick="openEditAppointmentModal('${item.id}')" title="Editar ou remarcar" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-pink-300 border border-pink-500/30 font-semibold transition">
+              ✏️ Editar
+            </button>
             <button onclick="openCancelModal('${item.id}')" title="Cancelar horário" class="px-2 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-900/40 text-rose-400 border border-dark-600 transition">
               ✕
             </button>
           `;
         } else if (item.depositStatus === 'CONFIRMED' || item.depositStatus === 'EXEMPT') {
           actionButtons = `
-            <span class="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1 mr-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-              Garantido
-            </span>
+            <button onclick="openEditAppointmentModal('${item.id}')" title="Editar ou remarcar atendimento" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-pink-300 border border-pink-500/30 text-xs font-semibold transition">
+              ✏️ Editar
+            </button>
             <button onclick="openCancelModal('${item.id}')" title="Desmarcar atendimento" class="px-2.5 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-900/40 text-rose-400 border border-dark-600 text-xs font-semibold transition">
               Desmarcar
             </button>
@@ -1431,6 +2315,8 @@
       // 2. RENDERIZAÇÃO MOBILE & TABLET PEQUENO (CARDS VERTICAIS ERGONÔMICOS)
       mobileList.innerHTML = filtered.map(item => {
         if (item.isBlockedSlot) {
+          const isCustomBlock = String(item.id || '').startsWith('block-');
+          const safeReason = escapeQuotes(item.service || 'Bloqueio');
           return `
             <div class="bg-striped-blocked rounded-2xl border border-slate-700 p-4 shadow-md space-y-2.5">
               <div class="flex items-start justify-between gap-2">
@@ -1442,12 +2328,19 @@
                   🚫 Bloqueio Interno
                 </span>
               </div>
-              <div class="pt-1 border-t border-slate-700/70">
-                <div class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                  <span>🔒</span> ${item.clientName}
+              <div class="pt-1 border-t border-slate-700/70 flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                    <span>🔒</span> ${item.clientName}
+                  </div>
+                  <div class="text-xs text-slate-300 font-medium mt-0.5">${item.service}</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">${item.notes || 'Horário trancado na agenda'}</div>
                 </div>
-                <div class="text-xs text-slate-300 font-medium mt-0.5">${item.service}</div>
-                <div class="text-[11px] text-slate-400 mt-0.5">${item.notes || 'Horário trancado na agenda'}</div>
+                ${isCustomBlock ? `
+                  <button onclick="unlockBlockedSlot('${item.id}', '${safeReason}')" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-200 border border-amber-500/30 text-xs font-bold shrink-0">
+                    🔓 Liberar
+                  </button>
+                ` : ''}
               </div>
             </div>
           `;
@@ -1524,34 +2417,36 @@
                 <span>✅ Validar Sinal / Aprovar (R$ ${formatCurrencyBR(item.depositAmount)})</span>
               </button>
               <div class="flex items-center gap-2">
-                ${item.depositStatus === 'PENDING' ? `
-                  <button onclick="markReceipt('${item.id}')" class="flex-1 min-h-[44px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-cyan-300 font-semibold text-xs border border-cyan-500/30 transition flex items-center justify-center gap-1.5">
-                    <span>📄 Marcar Comprovante</span>
-                  </button>
-                ` : ''}
-                <button onclick="openCancelModal('${item.id}')" class="flex-1 min-h-[44px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-rose-950/50 text-rose-400 font-semibold text-xs border border-rose-500/25 transition flex items-center justify-center gap-1.5">
-                  <span>✕ Cancelar Horário</span>
+                <button onclick="openEditAppointmentModal('${item.id}')" class="flex-1 min-h-[42px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-pink-300 font-bold text-xs border border-pink-500/30 transition">
+                  ✏️ Editar
+                </button>
+                <button onclick="openCancelModal('${item.id}')" class="flex-1 min-h-[42px] py-2 px-3 rounded-xl bg-dark-700 hover:bg-rose-950/50 text-rose-400 font-semibold text-xs border border-rose-500/25 transition">
+                  ✕ Cancelar
                 </button>
               </div>
             </div>
           `;
         } else if (item.depositStatus === 'CONFIRMED' || item.depositStatus === 'EXEMPT') {
           mobileFooterActions = `
-            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between text-xs">
-              <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+            <div class="pt-2.5 border-t border-dark-700 flex items-center justify-between gap-2 text-xs">
+              <span class="text-emerald-400 font-bold flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                Horário 100% Garantido na Grade
+                Garantido
               </span>
-              <button onclick="openCancelModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-rose-400/90 hover:text-rose-300 text-[11px] font-semibold border border-dark-600">
-                Desmarcar
-              </button>
+              <div class="flex items-center gap-1.5">
+                <button onclick="openEditAppointmentModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-pink-300 hover:text-white text-[11px] font-bold border border-pink-500/30">
+                  ✏️ Editar / Remarcar
+                </button>
+                <button onclick="openCancelModal('${item.id}')" class="min-h-[38px] px-3 py-1.5 rounded-lg bg-dark-700 text-rose-400/90 hover:text-rose-300 text-[11px] font-semibold border border-dark-600">
+                  Desmarcar
+                </button>
+              </div>
             </div>
           `;
         }
 
         return `
           <div class="bg-dark-800 rounded-2xl border ${cardBorderClass} p-4 shadow-lg space-y-3">
-            <!-- Topo do Card: Horário em destaque grande + Badge de Status -->
             <div class="flex items-start justify-between gap-2">
               <div>
                 <div class="text-xl font-extrabold text-white tracking-tight leading-none">${item.formattedTime}</div>
@@ -1563,7 +2458,6 @@
               </div>
             </div>
 
-            <!-- Corpo do Card: Cliente + Botão Rápido WhatsApp + Procedimento e Valores -->
             <div class="bg-dark-900/60 rounded-xl p-3 border border-dark-700 space-y-2.5">
               <div class="flex items-center justify-between gap-2">
                 <div class="min-w-0">
@@ -1573,7 +2467,6 @@
                   </div>
                   <div class="text-[11px] text-slate-400 font-mono mt-0.5">${item.whatsappPhone}</div>
                 </div>
-                <!-- Botão Rápido WhatsApp -->
                 <a href="${waLink}" target="_blank" title="Conversar no WhatsApp" aria-label="Conversar com ${safeName} no WhatsApp" class="min-h-[42px] px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1.5 shrink-0 transition">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/></svg>
                   <span>WhatsApp</span>
@@ -1593,11 +2486,566 @@
               </div>
             </div>
 
-            <!-- Rodapé do Card: Botões de Ação Touch-Friendly (mínimo 44px) -->
             ${mobileFooterActions}
           </div>
         `;
       }).join('');
+    }
+
+    // =========================================================================
+    // FUNÇÕES DE LANÇAMENTO RÁPIDO (1-TAP AGENDAR / BLOQUEAR / LIBERAR / EDITAR)
+    // =========================================================================
+    function populateServiceSelectOptions() {
+      const sel = document.getElementById('qbServiceSelect');
+      const datalist = document.getElementById('servicesAutocompleteList');
+      if (!sel) return;
+
+      const options = [`<option value="">Selecione um procedimento do catálogo...</option>`];
+      catalogServices.forEach(svc => {
+        options.push(`<option value="${escapeQuotes(svc.name)}" data-price="${svc.price}" data-duration="${svc.durationMinutes}">${svc.name} — R$ ${formatCurrencyBR(svc.price)} (${formatDurationHuman(svc.durationMinutes)})</option>`);
+      });
+      options.push(`<option value="__CUSTOM__">✨ Outro procedimento personalizado...</option>`);
+      sel.innerHTML = options.join('');
+
+      if (datalist) {
+        datalist.innerHTML = catalogServices.map(s => `<option value="${escapeQuotes(s.name)}"></option>`).join('');
+      }
+    }
+
+    function onQuickBookServiceChange() {
+      const sel = document.getElementById('qbServiceSelect');
+      const customInput = document.getElementById('qbCustomService');
+      if (!sel) return;
+
+      if (sel.value === '__CUSTOM__') {
+        customInput?.classList.remove('hidden');
+        customInput?.focus();
+        return;
+      }
+      customInput?.classList.add('hidden');
+      const matched = catalogServices.find(s => s.name === sel.value);
+      if (matched) {
+        document.getElementById('qbPrice').value = Number(matched.price).toFixed(2);
+        document.getElementById('qbDuration').value = matched.durationMinutes || 60;
+      }
+    }
+
+    function setQuickBookMode(mode) {
+      const tabBook = document.getElementById('qbTabBook');
+      const tabBlock = document.getElementById('qbTabBlock');
+      const formBook = document.getElementById('qbFormBook');
+      const formBlock = document.getElementById('qbFormBlock');
+
+      if (mode === 'BLOCK') {
+        tabBlock.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold transition bg-amber-600 text-white shadow';
+        tabBook.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold transition text-slate-300 hover:text-white';
+        formBook.classList.add('hidden');
+        formBlock.classList.remove('hidden');
+      } else {
+        tabBook.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold transition bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow';
+        tabBlock.className = 'flex-1 py-2 px-3 rounded-lg text-xs font-bold transition text-slate-300 hover:text-white';
+        formBlock.classList.add('hidden');
+        formBook.classList.remove('hidden');
+      }
+    }
+
+    function toggleBlockFullDayFields() {
+      const isFull = document.getElementById('qbBlockFullDay')?.checked;
+      const rangeBox = document.getElementById('qbBlockTimeRangeFields');
+      if (rangeBox) {
+        if (isFull) rangeBox.classList.add('hidden');
+        else rangeBox.classList.remove('hidden');
+      }
+    }
+
+    function openQuickBookModal(mode = 'BOOK', prefillDate = '', prefillTime = '09:00', prefillClientName = '', prefillClientPhone = '') {
+      populateServiceSelectOptions();
+      if (crmClients.length === 0) fetchClientsCrm(true);
+
+      const dateToUse = prefillDate || selectedDateKey || getTodayIsoLocal();
+      const timeToUse = prefillTime || '09:00';
+
+      document.getElementById('qbDate').value = dateToUse;
+      document.getElementById('qbTime').value = timeToUse;
+      document.getElementById('qbClientName').value = prefillClientName || '';
+      document.getElementById('qbClientPhone').value = prefillClientPhone || '';
+      document.getElementById('qbNotes').value = '';
+      document.getElementById('qbDepositStatus').value = 'EXEMPT';
+
+      if (catalogServices.length > 0) {
+        document.getElementById('qbServiceSelect').value = catalogServices[0].name;
+        document.getElementById('qbPrice').value = Number(catalogServices[0].price).toFixed(2);
+        document.getElementById('qbDuration').value = catalogServices[0].durationMinutes || 60;
+      }
+
+      // Campos de bloqueio
+      document.getElementById('qbBlockDate').value = dateToUse;
+      document.getElementById('qbBlockStart').value = timeToUse;
+      const endMins = Math.min(21 * 60, timeStrToMinutes(timeToUse) + 60);
+      document.getElementById('qbBlockEnd').value = minutesToTimeStr(endMins);
+      document.getElementById('qbBlockFullDay').checked = false;
+      document.getElementById('qbBlockReason').value = '';
+      toggleBlockFullDayFields();
+
+      setQuickBookMode(mode);
+
+      const modal = document.getElementById('quickBookModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeQuickBookModal() {
+      const modal = document.getElementById('quickBookModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleClientAutocomplete() {
+      const nameVal = (document.getElementById('qbClientName')?.value || '').trim().toLowerCase();
+      if (!nameVal) return;
+      const match = crmClients.find(c => (c.name || '').toLowerCase() === nameVal);
+      if (match && match.phone && !match.phone.endsWith('00000000')) {
+        document.getElementById('qbClientPhone').value = match.phone;
+      }
+    }
+
+    async function submitQuickBookAppointment() {
+      const dateStr = document.getElementById('qbDate').value;
+      const timeStr = document.getElementById('qbTime').value;
+      const clientName = document.getElementById('qbClientName').value.trim();
+      const whatsappPhone = document.getElementById('qbClientPhone').value.trim();
+      const selService = document.getElementById('qbServiceSelect').value;
+      const customService = document.getElementById('qbCustomService').value.trim();
+      const serviceName = selService === '__CUSTOM__' ? customService : selService;
+      const totalAmount = Number(document.getElementById('qbPrice').value);
+      const durationMinutes = Number(document.getElementById('qbDuration').value) || 60;
+      const depositStatus = document.getElementById('qbDepositStatus').value;
+      const notes = document.getElementById('qbNotes').value.trim();
+
+      if (!clientName) {
+        showToast('Informe o nome da cliente.', 'error');
+        return;
+      }
+      if (!serviceName) {
+        showToast('Selecione ou digite o procedimento.', 'error');
+        return;
+      }
+      if (!dateStr || !timeStr) {
+        showToast('Informe a data e o horário.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitQuickBook');
+      btn.disabled = true;
+      btn.innerText = '⏳ Salvando...';
+
+      try {
+        const res = await fetch('/api/appointments/owner-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientName,
+            whatsappPhone,
+            serviceName,
+            dateStr,
+            timeStr,
+            durationMinutes,
+            totalAmount,
+            depositStatus,
+            notes
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Agendamento de ${clientName} salvo às ${timeStr}!`);
+          selectedDateKey = dateStr;
+          closeQuickBookModal();
+          fetchDashboardData();
+          fetchClientsCrm(true);
+        } else {
+          showToast(data.error || 'Erro ao criar agendamento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de comunicação ao salvar agendamento.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '✅ Salvar na MinhaAgenda';
+      }
+    }
+
+    async function submitQuickBlockSlot() {
+      const dateStr = document.getElementById('qbBlockDate').value;
+      const fullDay = document.getElementById('qbBlockFullDay').checked;
+      const startTimeStr = document.getElementById('qbBlockStart').value;
+      const endTimeStr = document.getElementById('qbBlockEnd').value;
+      const reason = document.getElementById('qbBlockReason').value.trim() || 'Compromisso Pessoal';
+
+      if (!dateStr) {
+        showToast('Informe a data do bloqueio.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitQuickBlock');
+      btn.disabled = true;
+      btn.innerText = '⏳ Bloqueando...';
+
+      try {
+        const res = await fetch('/api/appointments/blocks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateStr,
+            startTimeStr,
+            endTimeStr,
+            fullDay,
+            reason
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Horário bloqueado com sucesso (${reason})!`);
+          selectedDateKey = dateStr;
+          closeQuickBookModal();
+          fetchDashboardData();
+        } else {
+          showToast(data.error || 'Erro ao bloquear horário.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao bloquear horário.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '🔒 Confirmar Bloqueio de Agenda';
+      }
+    }
+
+    async function unlockBlockedSlot(id, reasonLabel) {
+      if (!confirm(`Deseja destrancar e liberar o horário "${reasonLabel}" na agenda?`)) return;
+      try {
+        const res = await fetch(`/api/appointments/blocks/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Horário liberado com sucesso na grade!');
+          fetchDashboardData();
+        } else {
+          showToast(data.error || 'Erro ao liberar horário.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro ao liberar horário.', 'error');
+      }
+    }
+
+    function openEditAppointmentModal(id) {
+      const item = rawAppointments.find(i => i.id === id);
+      if (!item) return;
+
+      populateServiceSelectOptions();
+
+      document.getElementById('editApptId').value = item.id;
+      document.getElementById('editApptDate').value = getItemDateKey(item) || selectedDateKey;
+      const startStr = item.startTimeStr || (item.formattedTime ? String(item.formattedTime).split(' às ')[0] : '09:00');
+      document.getElementById('editApptTime').value = startStr;
+      document.getElementById('editApptClientName').value = item.clientName || '';
+      document.getElementById('editApptPhone').value = item.whatsappPhone || '';
+      document.getElementById('editApptService').value = item.service || '';
+      document.getElementById('editApptPrice').value = Number(item.totalAmount || 0).toFixed(2);
+      document.getElementById('editApptDuration').value = item.durationMinutes || 60;
+      document.getElementById('editApptDepositStatus').value = item.depositStatus || 'EXEMPT';
+      document.getElementById('editApptNotes').value = item.notes || '';
+
+      const modal = document.getElementById('editAppointmentModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditAppointmentModal() {
+      const modal = document.getElementById('editAppointmentModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openCancelFromEditModal() {
+      const id = document.getElementById('editApptId').value;
+      closeEditAppointmentModal();
+      if (id) openCancelModal(id);
+    }
+
+    async function submitEditAppointment() {
+      const id = document.getElementById('editApptId').value;
+      if (!id) return;
+
+      const dateStr = document.getElementById('editApptDate').value;
+      const timeStr = document.getElementById('editApptTime').value;
+      const clientName = document.getElementById('editApptClientName').value.trim();
+      const whatsappPhone = document.getElementById('editApptPhone').value.trim();
+      const serviceName = document.getElementById('editApptService').value.trim();
+      const totalAmount = Number(document.getElementById('editApptPrice').value);
+      const durationMinutes = Number(document.getElementById('editApptDuration').value) || 60;
+      const depositStatus = document.getElementById('editApptDepositStatus').value;
+      const notes = document.getElementById('editApptNotes').value.trim();
+
+      const btn = document.getElementById('btnSubmitEditAppt');
+      btn.disabled = true;
+      btn.innerText = '⏳ Salvando...';
+
+      try {
+        const res = await fetch(`/api/appointments/${encodeURIComponent(id)}/edit`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientName,
+            whatsappPhone,
+            serviceName,
+            dateStr,
+            timeStr,
+            durationMinutes,
+            totalAmount,
+            depositStatus,
+            notes
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Atendimento atualizado com sucesso!');
+          if (dateStr) selectedDateKey = dateStr;
+          closeEditAppointmentModal();
+          fetchDashboardData();
+        } else {
+          showToast(data.error || 'Erro ao editar atendimento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao atualizar atendimento.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '💾 Salvar Alterações';
+      }
+    }
+
+    // =========================================================================
+    // ABA 2: CLIENTES (CRM & HISTÓRICO)
+    // =========================================================================
+    async function fetchClientsCrm(silent = false) {
+      try {
+        const res = await fetch('/api/dashboard/clients');
+        if (!res.ok) throw new Error('Falha ao carregar clientes');
+        const data = await res.json();
+        crmClients = data.clients || [];
+
+        const badge = document.getElementById('clientsCountBadge');
+        if (badge) badge.innerText = crmClients.length;
+
+        const dl = document.getElementById('clientsAutocompleteList');
+        if (dl) {
+          dl.innerHTML = crmClients.map(c => `<option value="${escapeQuotes(c.name)}">${c.phone || ''}</option>`).join('');
+        }
+
+        if (!silent) renderClientsCrm();
+      } catch (err) {
+        if (!silent) showToast('Erro ao carregar lista de clientes', 'error');
+      }
+    }
+
+    function renderClientsCrm() {
+      const grid = document.getElementById('clientsCrmGrid');
+      const summaryEl = document.getElementById('clientsSummaryText');
+      if (!grid) return;
+
+      const q = (document.getElementById('clientSearchInput')?.value || '').toLowerCase().trim();
+      let list = crmClients;
+      if (q) {
+        list = list.filter(c =>
+          (c.name || '').toLowerCase().includes(q) ||
+          (c.phone || '').includes(q) ||
+          (c.lastService || '').toLowerCase().includes(q)
+        );
+      }
+
+      if (summaryEl) {
+        summaryEl.innerText = `${list.length} cliente(s) encontrada(s)`;
+      }
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-dark-800 rounded-2xl border border-dark-600 p-8 text-center text-xs text-slate-400">
+            Nenhuma cliente encontrada para a busca.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(c => {
+        const cleanPhone = (c.phone || '').replace(/\D/g, '');
+        const hasRealPhone = cleanPhone && !cleanPhone.endsWith('00000000');
+        const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, ${c.name}! Aqui é do Studio JF Lash e Designer ✨ Tudo bem?`)}`;
+        const safeName = escapeQuotes(c.name);
+        const safePhone = escapeQuotes(hasRealPhone ? c.phone : '');
+        const lastDateFormatted = c.lastAppointmentDate
+          ? new Date(c.lastAppointmentDate).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+          : '--';
+
+        return `
+          <div class="bg-dark-800 rounded-2xl border border-dark-600 p-4 shadow-lg flex flex-col justify-between gap-3 hover:border-pink-500/40 transition">
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 class="text-sm sm:text-base font-extrabold text-white">${c.name}</h3>
+                  <p class="text-[11px] font-mono text-slate-400">${hasRealPhone ? c.phone : 'Telefone não informado'}</p>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${c.isRecurring ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}">
+                  ${c.isRecurring ? '💖 Recorrente' : '✨ 1ª Vez'}
+                </span>
+              </div>
+
+              <div class="bg-dark-900/60 rounded-xl p-2.5 border border-dark-700 grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Atendimentos</span>
+                  <strong class="text-white font-bold">${c.appointmentsCount || 0} visita(s)</strong>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-400 block">Total Investido</span>
+                  <strong class="text-emerald-300 font-bold">R$ ${formatCurrencyBR(c.totalSpent || 0)}</strong>
+                </div>
+                <div class="col-span-2 pt-1 border-t border-dark-700/80">
+                  <span class="text-[10px] text-slate-400 block">Último Procedimento (${lastDateFormatted}):</span>
+                  <span class="text-pink-200 font-semibold text-xs">${c.lastService || 'Não registrado'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2 border-t border-dark-700">
+              <button type="button" onclick="openQuickBookModal('BOOK', selectedDateKey, '09:00', '${safeName}', '${safePhone}')" class="flex-1 min-h-[38px] px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white text-xs font-bold shadow flex items-center justify-center gap-1">
+                <span>➕ Agendar</span>
+              </button>
+              ${hasRealPhone ? `
+                <a href="${waLink}" target="_blank" class="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1">
+                  <span>💬 WhatsApp</span>
+                </a>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // ABA 3: CAIXA & FINANCEIRO
+    // =========================================================================
+    function renderFinanceTab() {
+      const finDayTotal = document.getElementById('finDayTotal');
+      const finDaySub = document.getElementById('finDaySub');
+      const finWeekTotal = document.getElementById('finWeekTotal');
+      const finWeekSub = document.getElementById('finWeekSub');
+      const finDepositsPaid = document.getElementById('finDepositsPaid');
+      const finBalanceDue = document.getElementById('finBalanceDue');
+      const listContainer = document.getElementById('financeListContainer');
+      if (!finWeekTotal || !listContainer) return;
+
+      const activeWeekAppts = rawAppointments.filter(item =>
+        !item.isBlockedSlot &&
+        item.generalStatus !== 'CANCELLED' &&
+        item.overallStatus !== 'CANCELLED' &&
+        item.depositStatus !== 'EXPIRED'
+      );
+
+      const dayAppts = activeWeekAppts.filter(i => getItemDateKey(i) === selectedDateKey);
+      const daySum = dayAppts.reduce((acc, i) => acc + Number(i.totalAmount || 0), 0);
+      const weekSum = activeWeekAppts.reduce((acc, i) => acc + Number(i.totalAmount || 0), 0);
+      const depositsPaidSum = activeWeekAppts
+        .filter(i => i.depositStatus === 'CONFIRMED')
+        .reduce((acc, i) => acc + Number(i.depositAmount || 0), 0);
+      const balanceDueSum = Math.max(0, weekSum - depositsPaidSum);
+
+      if (finDayTotal) finDayTotal.innerText = `R$ ${formatCurrencyBR(daySum)}`;
+      if (finDaySub) finDaySub.innerText = `${dayAppts.length} atendimento(s) em ${selectedDateKey.split('-').reverse().join('/')}`;
+      if (finWeekTotal) finWeekTotal.innerText = `R$ ${formatCurrencyBR(weekSum)}`;
+      if (finWeekSub) finWeekSub.innerText = `${activeWeekAppts.length} atendimento(s) ativos na semana`;
+      if (finDepositsPaid) finDepositsPaid.innerText = `R$ ${formatCurrencyBR(depositsPaidSum)}`;
+      if (finBalanceDue) finBalanceDue.innerText = `R$ ${formatCurrencyBR(balanceDueSum)}`;
+
+      if (activeWeekAppts.length === 0) {
+        listContainer.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">Nenhum atendimento ativo nesta semana.</div>`;
+        return;
+      }
+
+      listContainer.innerHTML = activeWeekAppts.map(item => {
+        const total = Number(item.totalAmount || 0);
+        const signalPaid = item.depositStatus === 'CONFIRMED' ? Number(item.depositAmount || 0) : 0;
+        const remaining = Math.max(0, total - signalPaid);
+        return `
+          <div class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-dark-700/40">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-pink-300">${item.formattedDate} • ${item.formattedTime}</span>
+                <span class="text-xs sm:text-sm font-extrabold text-white">${item.clientName}</span>
+              </div>
+              <div class="text-xs text-slate-300 mt-0.5">💅 ${item.service}</div>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+              <span class="text-slate-400">Total: <strong class="text-white">R$ ${formatCurrencyBR(total)}</strong></span>
+              <span class="text-cyan-300">Sinal Pago: <strong>R$ ${formatCurrencyBR(signalPaid)}</strong></span>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                Receber no dia: R$ ${formatCurrencyBR(remaining)}
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // ABA 4: CONEXÃO 24/7 EMBUTIDA
+    // =========================================================================
+    async function fetchConnectionStatus() {
+      const badge = document.getElementById('connStatusBadge');
+      const stateText = document.getElementById('connStateText');
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        const isConnected = data.whatsappStatus === 'CONNECTED' || data.connected === true;
+        if (badge) {
+          badge.className = isConnected
+            ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+            : 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+          badge.innerText = isConnected ? '🟢 Conectado 24/7' : `🟡 ${data.whatsappStatus || 'Aguardando Conexão'}`;
+        }
+        if (stateText) {
+          stateText.innerText = isConnected ? 'WhatsApp da Alícia Online e Respondendo' : 'Aguardando Pareamento';
+        }
+      } catch (err) {
+        if (badge) badge.innerText = 'Erro ao verificar';
+      }
+    }
+
+    async function requestPairingCodeFromDashboard() {
+      const phone = (document.getElementById('dashPairingPhone')?.value || '').replace(/\D/g, '');
+      if (phone.length < 10) {
+        showToast('Informe o número com DDI 55 + DDD + Número.', 'error');
+        return;
+      }
+      const btn = document.getElementById('btnDashPairingCode');
+      btn.disabled = true;
+      btn.innerText = 'Gerando...';
+      try {
+        const res = await fetch('/api/whatsapp/pairing-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: phone })
+        });
+        const data = await res.json();
+        if (data.success && data.pairingCode) {
+          document.getElementById('dashPairingCodeResult')?.classList.remove('hidden');
+          document.getElementById('dashPairingCodeValue').innerText = data.pairingCode;
+          showToast('Código de 8 dígitos gerado! Digite no WhatsApp.');
+        } else {
+          showToast(data.error || 'Erro ao gerar código de pareamento.', 'error');
+        }
+      } catch (err) {
+        showToast('Erro de conexão ao gerar código.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Gerar Código';
+      }
     }
 
     function openConfirmModal(id, name, service, depositAmount) {
@@ -1755,11 +3203,12 @@
       }
     }
 
-    // Inicializa carregando agendamentos e contagem do catálogo
+    // Inicializa carregando agendamentos, catálogo e CRM de clientes
     fetchDashboardData();
     fetchCatalogServices();
+    fetchClientsCrm(true);
     setInterval(() => {
-      if (currentDashboardTab === 'APPOINTMENTS') {
+      if (currentDashboardTab === 'APPOINTMENTS' || currentDashboardTab === 'FINANCE') {
         fetchDashboardData();
       }
     }, 30000);

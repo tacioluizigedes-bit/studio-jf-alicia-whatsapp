@@ -741,6 +741,37 @@ app.get(['/logo-jf.png', '/favicon.png', '/favicon.ico'], (req: Request, res: Re
 });
 
 /**
+ * Manifesto PWA (Progressive Web App) para instalação do MinhaAgenda Studio JF na tela inicial do iPhone/Android
+ */
+app.get('/manifest.json', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.json({
+    name: 'MinhaAgenda — Studio JF Lash e Designer',
+    short_name: 'MinhaAgenda JF',
+    description: 'Agenda digital, clientes, financeiro e procedimentos do Studio JF Lash e Designer',
+    start_url: '/dashboard',
+    scope: '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#090d16',
+    theme_color: '#090d16',
+    icons: [
+      {
+        src: '/logo-jf.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any maskable',
+      },
+      {
+        src: '/logo-jf.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+    ],
+  });
+});
+
+/**
  * Rota para servir a interface do Dashboard Semanal de Agendamentos & Sinais
  */
 app.get('/dashboard', (req: Request, res: Response) => {

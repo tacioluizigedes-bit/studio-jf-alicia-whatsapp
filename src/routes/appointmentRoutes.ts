@@ -440,3 +440,90 @@ appointmentRouter.delete('/services/:id', (req: Request, res: Response) => {
     });
   }
 });
+
+/**
+ * POST /api/dashboard/owner-create (e /api/appointments/owner-create)
+ * Cria agendamento diretamente pelo painel MinhaAgenda da Janaína (toque em horário vago ou botão +)
+ */
+appointmentRouter.post('/owner-create', async (req: Request, res: Response) => {
+  try {
+    const result = await appointmentService.createOwnerDashboardAppointment(req.body || {});
+    scheduleDatabaseVaultBackup();
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao criar agendamento.',
+    });
+  }
+});
+
+/**
+ * PATCH /api/dashboard/:id/edit (e /api/appointments/:id/edit)
+ * Edição completa de agendamento (trocar horário, data, procedimento, valor ou status)
+ */
+appointmentRouter.patch('/:id/edit', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await appointmentService.editOwnerDashboardAppointment(id, req.body || {});
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao editar agendamento.',
+    });
+  }
+});
+
+/**
+ * POST /api/dashboard/blocks (e /api/appointments/blocks)
+ * Bloqueia horário ou dia inteiro diretamente pela régua do MinhaAgenda
+ */
+appointmentRouter.post('/blocks', async (req: Request, res: Response) => {
+  try {
+    const result = await appointmentService.createBlockedSlotFromDashboard(req.body || {});
+    scheduleDatabaseVaultBackup();
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao bloquear horário.',
+    });
+  }
+});
+
+/**
+ * DELETE /api/dashboard/blocks/:id (e /api/appointments/blocks/:id)
+ * Desbloqueia / libera horário bloqueado na régua do MinhaAgenda
+ */
+appointmentRouter.delete('/blocks/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await appointmentService.deleteBlockedSlotFromDashboard(id);
+    scheduleDatabaseVaultBackup();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      error: error?.message || 'Erro ao liberar bloqueio.',
+    });
+  }
+});
+
+/**
+ * GET /api/dashboard/clients (e /api/appointments/clients)
+ * Lista CRM de clientes atendidas com histórico, recorrência e total investido
+ */
+appointmentRouter.get('/clients', async (req: Request, res: Response) => {
+  try {
+    const result = await appointmentService.getClientsCrmList();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Erro ao carregar lista de clientes.',
+    });
+  }
+});
+
