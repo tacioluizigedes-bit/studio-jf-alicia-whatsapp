@@ -494,6 +494,9 @@ export async function initWhatsAppConnection(skipVaultRestore: boolean = false):
     sock.ev.on('contacts.upsert', (contacts: any) => {
       registerWhatsAppContacts(contacts);
     });
+    sock.ev.on('messaging-history.set', (hist: any) => {
+      registerWhatsAppContacts((hist && hist.contacts) || []);
+    });
     sock.ev.on('contacts.update', (contacts: any) => {
       registerWhatsAppContacts(contacts);
     });
